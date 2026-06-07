@@ -1,0 +1,464 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Second Thought</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f3 ede1; --paper:#f3ede1;
+    --card:#f9f4ea; --ink:#2a241f; --soft:#6d6458; --faint:#9a9183;
+    --line:#ddd1bd; --teal:#2f6b5d; --teal-soft:#e6efe9;
+    --heat:#b06a2c; --heat-soft:#f1e4d2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{min-height:100%}
+  body{
+    background:
+      radial-gradient(900px 500px at 100% -5%, #f7f1e6, transparent 60%),
+      var(--paper);
+    color:var(--ink); font-family:'Hanken Grotesk',system-ui,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+    display:flex;justify-content:center;padding:34px 20px 90px;
+  }
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.04;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  .wrap{width:100%;max-width:600px}
+
+  .kicker{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--teal);font-weight:600}
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:52px;line-height:.98;letter-spacing:-.01em;margin:10px 0 6px}
+  .tag{font-family:'Fraunces',serif;font-style:italic;font-size:18px;color:var(--soft)}
+
+  .tabs{display:flex;gap:26px;margin:28px 0 6px;border-bottom:1px solid var(--line)}
+  .tab{font-size:14px;font-weight:600;color:var(--faint);background:none;border:none;cursor:pointer;
+    padding:0 0 12px;position:relative;letter-spacing:.01em}
+  .tab.active{color:var(--ink)}
+  .tab.active::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--teal)}
+
+  .view{padding-top:24px;animation:fade .4s ease both}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .lead{font-family:'Fraunces',serif;font-size:21px;line-height:1.4;margin-bottom:22px}
+  .lead b{font-weight:600}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;
+    box-shadow:0 1px 0 #fff inset, 0 14px 30px -22px rgba(60,45,25,.4)}
+  label{display:block;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);
+    font-weight:600;margin-bottom:8px}
+  input[type=text],textarea{width:100%;font-family:inherit;font-size:16px;color:var(--ink);
+    background:#fffdf8;border:1px solid var(--line);border-radius:10px;padding:11px 13px;outline:none;resize:vertical}
+  input[type=text]:focus,textarea:focus{border-color:var(--teal)}
+  textarea{min-height:62px;line-height:1.5}
+  .field{margin-bottom:20px}
+
+  .q{padding:14px 0;border-top:1px solid var(--line)}
+  .q:first-of-type{border-top:none}
+  .q .qtext{font-size:15px;margin-bottom:10px;color:var(--ink)}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fffdf8}
+  .seg button{font-family:inherit;font-size:13px;font-weight:600;color:var(--soft);background:none;border:none;
+    padding:8px 20px;cursor:pointer;transition:.15s}
+  .seg button+button{border-left:1px solid var(--line)}
+  .seg button.sel-yes{background:var(--teal);color:#fff}
+  .seg button.sel-no{background:var(--ink);color:#fff}
+
+  .moods{display:flex;flex-wrap:wrap;gap:8px}
+  .mood{font-family:inherit;font-size:13px;font-weight:600;color:var(--soft);background:#fffdf8;
+    border:1px solid var(--line);border-radius:20px;padding:8px 16px;cursor:pointer;transition:.15s}
+  .mood.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .go{width:100%;margin-top:6px;font-family:'Fraunces',serif;font-size:17px;font-weight:600;color:#fff;
+    background:var(--teal);border:none;border-radius:11px;padding:15px;cursor:pointer;transition:.2s;letter-spacing:.01em}
+  .go:hover{background:#27594d}
+
+  /* reflection */
+  .reflect{margin-top:22px;animation:fade .4s ease both}
+  .meter{display:flex;align-items:baseline;gap:12px;margin-bottom:4px}
+  .meter .h{font-family:'Fraunces',serif;font-size:15px;font-weight:600}
+  .pips{display:flex;gap:5px;margin:10px 0 18px}
+  .pip{width:100%;height:7px;border-radius:4px;background:var(--heat-soft)}
+  .pip.on{background:var(--heat)}
+  .readback{font-family:'Fraunces',serif;font-size:18px;line-height:1.5;margin-bottom:14px}
+  .mirror{list-style:none;margin:14px 0 20px}
+  .mirror li{font-size:14.5px;padding:7px 0 7px 22px;position:relative;color:var(--ink);border-top:1px dashed var(--line)}
+  .mirror li:first-child{border-top:none}
+  .mirror li.warn::before{content:"›";position:absolute;left:4px;color:var(--heat);font-weight:700}
+  .mirror li.good::before{content:"✓";position:absolute;left:2px;color:var(--teal);font-weight:700;font-size:12px}
+  .verdict{font-family:'Fraunces',serif;font-size:19px;line-height:1.45;padding:16px 18px;border-radius:12px;margin-bottom:18px}
+  .verdict.hot{background:var(--heat-soft);border:1px solid #e3c9a6}
+  .verdict.cool{background:var(--teal-soft);border:1px solid #cfe0d8}
+  .actions{display:flex;gap:10px;flex-wrap:wrap}
+  .actions button{flex:1;min-width:140px;font-family:inherit;font-weight:600;font-size:14px;padding:13px;border-radius:10px;cursor:pointer;transition:.18s}
+  .btn-park{background:var(--ink);color:#fff;border:none}
+  .btn-park:hover{background:#000}
+  .btn-log{background:none;color:var(--ink);border:1px solid var(--line)}
+  .btn-log:hover{border-color:var(--ink)}
+
+  .decide{margin-top:14px;padding:16px;border:1px dashed var(--line);border-radius:12px}
+  .decide .seg button{padding:8px 16px}
+
+  /* journal */
+  .stats{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap}
+  .stat{flex:1;min-width:90px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+  .stat .n{font-family:'Fraunces',serif;font-size:26px;font-weight:600;line-height:1}
+  .stat .l{font-size:11px;color:var(--soft);letter-spacing:.04em;margin-top:5px}
+  .entry{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px;margin-bottom:12px}
+  .entry .top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+  .entry .tk{font-family:'Fraunces',serif;font-size:18px;font-weight:600}
+  .entry .dot{display:inline-flex;gap:3px}
+  .entry .dot i{width:6px;height:6px;border-radius:50%;background:var(--heat-soft)}
+  .entry .dot i.on{background:var(--heat)}
+  .entry .why{font-size:14px;color:var(--soft);font-style:italic;font-family:'Fraunces',serif;margin:4px 0 8px}
+  .entry .meta{font-size:12px;color:var(--faint);display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;letter-spacing:.02em}
+  .badge.parked{background:var(--ink);color:#fff}
+  .badge.bought{background:var(--heat-soft);color:#8a4f1d}
+  .badge.waited{background:var(--teal-soft);color:#22564a}
+  .badge.passed{background:#e9e2d4;color:var(--soft)}
+  .revisit{margin-top:9px;font-family:inherit;font-size:13px;font-weight:600;color:#fff;background:var(--teal);border:none;border-radius:9px;padding:9px 14px;cursor:pointer}
+  .empty{text-align:center;color:var(--faint);padding:34px 10px;font-family:'Fraunces',serif;font-style:italic;font-size:17px}
+
+  .foot{margin-top:30px;font-size:12px;color:var(--faint);line-height:1.6;border-top:1px solid var(--line);padding-top:16px}
+  .foot b{color:var(--soft);font-weight:600}
+</style>
+
+<div class="wrap">
+  <div class="kicker">A trading-discipline journal · with Li-Da</div>
+  <h1>Second Thought</h1>
+  <div class="tag">Pause before you act on a hot feeling.</div>
+
+  <div class="tabs">
+    <button class="tab active" id="tabPause" onclick="show('pause')">The Pause</button>
+    <button class="tab" id="tabJournal" onclick="show('journal')">The Journal</button>
+    <button class="tab" id="tabItch" onclick="show('itch')">The Itch</button>
+  </div>
+
+  <!-- PAUSE VIEW -->
+  <div class="view" id="pauseView">
+    <div class="lead">Eyeing a trade? Don't click buy yet. <b>Walk it through the light first.</b></div>
+    <div class="card" id="form">
+      <div class="field">
+        <label>What are you eyeing?</label>
+        <input type="text" id="ticker" placeholder="e.g. PLUG, a silver ETF, BTC…" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Why now — one honest sentence</label>
+        <textarea id="why" placeholder="Say it plainly, the way you'd say it to a friend."></textarea>
+      </div>
+
+      <div id="questions"></div>
+
+      <div class="field" style="margin:18px 0 4px">
+        <label>How do you feel right this second?</label>
+        <div class="moods" id="moods"></div>
+      </div>
+
+      <button class="go" onclick="reflect()">Hold it up to the light →</button>
+    </div>
+    <div id="reflectBox"></div>
+  </div>
+
+  <!-- JOURNAL VIEW -->
+  <div class="view" id="journalView" style="display:none">
+    <div class="stats" id="stats"></div>
+    <div id="entries"></div>
+  </div>
+
+  <!-- ITCH VIEW -->
+  <style>
+    .itch-lead{font-family:'Fraunces',serif;font-size:21px;line-height:1.4;margin-bottom:6px}
+    .itch-sub{color:var(--soft);font-size:14.5px;margin-bottom:22px}
+    .urge-btn{width:100%;background:var(--card);border:1px solid var(--line);border-radius:14px;
+      padding:26px;font-family:'Fraunces',serif;font-size:22px;font-weight:600;color:var(--ink);cursor:pointer;
+      transition:.2s;box-shadow:0 1px 0 #fff inset, 0 14px 30px -22px rgba(60,45,25,.4)}
+    .urge-btn:hover{border-color:var(--teal);color:var(--teal)}
+    .urge-box{margin-top:16px;animation:fade .35s ease both}
+    .itch-q{font-family:'Fraunces',serif;font-size:19px;line-height:1.4;margin-bottom:14px}
+    .urge-opts{display:flex;flex-direction:column;gap:9px}
+    .urge-opts button{font-family:inherit;font-size:15px;font-weight:600;text-align:left;color:var(--ink);
+      background:#fffdf8;border:1px solid var(--line);border-radius:10px;padding:13px 15px;cursor:pointer;transition:.15s}
+    .urge-opts button:hover{border-color:var(--ink)}
+    .calm-msg{font-family:'Fraunces',serif;font-size:18px;line-height:1.5;padding:18px;border-radius:12px;
+      background:var(--teal-soft);border:1px solid #cfe0d8;animation:fade .35s ease both}
+    .calm-msg .sm{display:block;font-family:'Hanken Grotesk';font-style:normal;font-size:13.5px;color:var(--soft);margin-top:10px}
+    .calm-msg a{color:var(--teal);font-weight:600;cursor:pointer;text-decoration:underline}
+    .spark{display:flex;align-items:flex-end;gap:7px;height:64px;margin:6px 0 4px}
+    .spark .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+    .spark .bar{width:100%;background:var(--teal-soft);border:1px solid #cfe0d8;border-radius:5px 5px 0 0;min-height:3px;transition:.3s}
+    .spark .bar.today{background:var(--teal)}
+    .spark .lab{font-size:10px;color:var(--faint)}
+    .insight{font-family:'Fraunces',serif;font-style:italic;font-size:15.5px;color:var(--soft);margin-top:16px;
+      padding-top:14px;border-top:1px solid var(--line)}
+  </style>
+  <div class="view" id="itchView" style="display:none">
+    <div class="itch-lead">The itch to check isn't a decision. It's anxiety asking for a snack.</div>
+    <div class="itch-sub">Watching the price doesn't move it. This is where you notice the urge instead of scratching it — and slowly, it loosens its grip.</div>
+    <button class="urge-btn" id="urgeBtn" onclick="feelUrge()">I feel the urge to check &nbsp;→</button>
+    <div id="urgeBox"></div>
+
+    <div class="card" style="margin-top:22px">
+      <div class="stats" id="itchStats" style="margin-bottom:14px"></div>
+      <label>Last 7 days</label>
+      <div class="spark" id="spark"></div>
+      <div class="insight" id="itchInsight"></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>What this is — and isn't.</b> Second Thought never tells you what to buy or sell, and never predicts a price.
+    It only holds your own words up to the light, so the patterns become yours to see. It is a mirror, not advice.
+  </div>
+</div>
+
+<script>
+// hype-ward answer for each question is stored as the "flag" direction
+const QS = [
+  {id:'q1', text:'Did you first hear about this in the last 48 hours?', flag:'yes'},
+  {id:'q2', text:'Has the price already run up a lot recently?', flag:'yes'},
+  {id:'q3', text:"Are you worried you'll miss out if you don't act today?", flag:'yes'},
+  {id:'q4', text:'Can you explain how it actually makes money / what it does?', flag:'no'},
+  {id:'q5', text:'Do you have a price where you would sell — both up and down?', flag:'no'},
+  {id:'q6', text:'If it dropped 30% tomorrow, could you hold calmly?', flag:'no'},
+];
+const MOODS = ['Calm','Excited','Anxious','FOMO','Bored'];
+const MIRROR = {
+  q1:{warn:'You only heard about this a day or two ago.'},
+  q2:{warn:"It's already run up — you may be chasing it."},
+  q3:{warn:"You're feeling you'll miss out. That's FOMO, not a thesis."},
+  q4:{warn:"You're not fully sure how it makes money.", good:'You can explain what it does.'},
+  q5:{warn:"You haven't set an exit — up or down.", good:'You have an exit planned. That\u2019s discipline.'},
+  q6:{warn:"You're not sure you could hold calmly through a drop.", good:'You could hold calmly through a 30% drop.'},
+};
+
+let answers={}, mood=null, entries=[], checks=[], urgeTs=null;
+
+function store(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}
+function recall(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(_){return null}}
+
+function init(){
+  entries = recall('secondthought_entries') || [];
+  checks = recall('secondthought_checks') || [];
+  const qc=document.getElementById('questions');
+  qc.innerHTML = QS.map(q=>`
+    <div class="q">
+      <div class="qtext">${q.text}</div>
+      <div class="seg" data-q="${q.id}">
+        <button onclick="ans('${q.id}','yes',this)">Yes</button>
+        <button onclick="ans('${q.id}','no',this)">No</button>
+      </div>
+    </div>`).join('');
+  document.getElementById('moods').innerHTML = MOODS.map(m=>
+    `<button class="mood" onclick="pickMood('${m}',this)">${m}</button>`).join('');
+  renderJournal();
+  renderItch();
+}
+function ans(q,val,el){
+  answers[q]=val;
+  el.parentNode.querySelectorAll('button').forEach(b=>b.className='');
+  el.className = val==='yes'?'sel-yes':'sel-no';
+}
+function pickMood(m,el){
+  mood=m;
+  document.querySelectorAll('#moods .mood').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+}
+function show(v){
+  document.getElementById('pauseView').style.display = v==='pause'?'block':'none';
+  document.getElementById('journalView').style.display = v==='journal'?'block':'none';
+  document.getElementById('itchView').style.display = v==='itch'?'block':'none';
+  document.getElementById('tabPause').classList.toggle('active',v==='pause');
+  document.getElementById('tabJournal').classList.toggle('active',v==='journal');
+  document.getElementById('tabItch').classList.toggle('active',v==='itch');
+  if(v==='journal') renderJournal();
+  if(v==='itch') renderItch();
+}
+
+function heatOf(a){ return QS.filter(q=>a[q.id]===q.flag).length; }
+
+let pending=null;
+function reflect(){
+  const ticker=document.getElementById('ticker').value.trim();
+  const why=document.getElementById('why').value.trim();
+  if(!ticker){ document.getElementById('ticker').focus(); return; }
+  const heat=heatOf(answers);
+  const hot = heat>=4, mid = heat>=2&&heat<4;
+
+  // mirror lines
+  let lines='';
+  QS.forEach(q=>{
+    if(answers[q.id]===undefined) return;
+    const isFlag = answers[q.id]===q.flag;
+    const m=MIRROR[q.id];
+    if(isFlag && m.warn) lines+=`<li class="warn">${m.warn}</li>`;
+    else if(!isFlag && m.good) lines+=`<li class="good">${m.good}</li>`;
+  });
+  if(mood==='FOMO'||mood==='Excited') lines=`<li class="warn">Right now you feel <b>${mood.toLowerCase()}</b> — the riskiest state to buy in.</li>`+lines;
+  else if(mood==='Calm') lines=`<li class="good">You feel calm right now — a good state to decide in.</li>`+lines;
+
+  const verdict = hot
+    ? `<div class="verdict hot">This is reading as an <b>excitement-led</b> decision — the exact pattern you're working on. You don't have to decide today. The best trades are still here tomorrow.</div>`
+    : mid
+    ? `<div class="verdict hot">Some heat here, some sense. Sit with the warm spots below before you act.</div>`
+    : `<div class="verdict cool">This looks <b>considered</b>. You've done the thinking — whatever you choose, it's a decision, not an impulse.</div>`;
+
+  pending={ticker,why,heat,mood,answers:{...answers},ts:Date.now()};
+
+  const pips=[0,1,2,3,4,5].map(i=>`<span class="pip ${i<heat?'on':''}"></span>`).join('');
+  document.getElementById('reflectBox').innerHTML = `
+    <div class="reflect card">
+      <div class="meter"><span class="h">Heat reading</span><span style="color:var(--soft);font-size:13px">${heat} of 6 hype signals</span></div>
+      <div class="pips">${pips}</div>
+      <ul class="mirror">${lines||'<li class="good">Answer the questions above and your words will appear here.</li>'}</ul>
+      ${verdict}
+      <div class="actions">
+        <button class="btn-park" onclick="park()">${hot?'Sleep on it · park 24h':'Park it 24h anyway'}</button>
+        <button class="btn-log" onclick="openDecide()">Log my decision now</button>
+      </div>
+      <div id="decideBox"></div>
+    </div>`;
+  document.getElementById('reflectBox').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function park(){
+  if(!pending) return;
+  pending.status='parked';
+  entries.unshift(pending); store('secondthought_entries',entries);
+  pending=null; resetForm();
+  show('journal');
+}
+function openDecide(){
+  document.getElementById('decideBox').innerHTML=`
+    <div class="decide">
+      <label>What did you actually do?</label>
+      <div class="seg" style="border-radius:9px">
+        <button onclick="logDecision('bought',this)">Bought</button>
+        <button onclick="logDecision('waited',this)">Waited</button>
+        <button onclick="logDecision('passed',this)">Passed</button>
+      </div>
+    </div>`;
+}
+function logDecision(d){
+  if(!pending) return;
+  pending.status=d;
+  entries.unshift(pending); store('secondthought_entries',entries);
+  pending=null; resetForm();
+  show('journal');
+}
+function resetForm(){
+  answers={}; mood=null;
+  document.getElementById('ticker').value='';
+  document.getElementById('why').value='';
+  document.getElementById('reflectBox').innerHTML='';
+  document.querySelectorAll('#questions .seg button').forEach(b=>b.className='');
+  document.querySelectorAll('#moods .mood').forEach(b=>b.classList.remove('active'));
+}
+
+function revisit(i){
+  const e=entries[i];
+  show('pause');
+  document.getElementById('ticker').value=e.ticker||'';
+  document.getElementById('why').value=e.why||'';
+  answers={...(e.answers||{})}; mood=e.mood||null;
+  QS.forEach(q=>{
+    const seg=document.querySelector(`.seg[data-q="${q.id}"]`); if(!seg)return;
+    seg.querySelectorAll('button').forEach(b=>b.className='');
+    if(answers[q.id]==='yes') seg.children[0].className='sel-yes';
+    if(answers[q.id]==='no') seg.children[1].className='sel-no';
+  });
+  document.querySelectorAll('#moods .mood').forEach(b=>{ if(b.textContent===mood) b.classList.add('active'); });
+  entries.splice(i,1); store('secondthought_entries',entries);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function renderJournal(){
+  const total=entries.length;
+  const parked=entries.filter(e=>e.status==='parked').length;
+  const waitedPassed=entries.filter(e=>e.status==='waited'||e.status==='passed').length;
+  const hotCount=entries.filter(e=>e.heat>=4).length;
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="n">${total}</div><div class="l">trades thought through</div></div>
+    <div class="stat"><div class="n">${parked+waitedPassed}</div><div class="l">times you paused or held off</div></div>
+    <div class="stat"><div class="n">${hotCount}</div><div class="l">ran hot (4+ signals)</div></div>`;
+
+  const wrap=document.getElementById('entries');
+  if(!total){ wrap.innerHTML='<div class="empty">No entries yet. Your patterns will gather here, one honest pause at a time.</div>'; return; }
+  wrap.innerHTML=entries.map((e,i)=>{
+    const pips=[0,1,2,3,4,5].map(k=>`<i class="${k<e.heat?'on':''}"></i>`).join('');
+    const d=new Date(e.ts);
+    const date=d.toLocaleDateString(undefined,{day:'numeric',month:'short'})+' · '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+    const ready = e.status==='parked' && (Date.now()-e.ts > 24*3600*1000);
+    const badge = `<span class="badge ${e.status}">${e.status==='parked'?(ready?'parked · ready':'parked'):e.status}</span>`;
+    return `<div class="entry">
+      <div class="top"><span class="tk">${(e.ticker||'—').replace(/</g,'&lt;')}</span><span class="dot">${pips}</span></div>
+      ${e.why?`<div class="why">“${e.why.replace(/</g,'&lt;')}”</div>`:''}
+      <div class="meta">${badge}<span>${e.mood||''}</span><span>${date}</span></div>
+      ${ready?`<button class="revisit" onclick="revisit(${i})">A day has passed — decide with a clear head →</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+function feelUrge(){
+  urgeTs=Date.now();
+  document.getElementById('urgeBtn').style.display='none';
+  document.getElementById('urgeBox').innerHTML=`
+    <div class="urge-box card">
+      <div class="itch-q">Before you look — be honest. Would you actually <i>do</i> anything about what you'd see right now?</div>
+      <div class="urge-opts">
+        <button onclick="resolveUrge('no')">Probably not — I just want to look</button>
+        <button onclick="resolveUrge('maybe')">Maybe… I'm not sure</button>
+        <button onclick="resolveUrge('yes')">Yes — I have a real reason</button>
+      </div>
+    </div>`;
+  document.getElementById('urgeBox').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function resolveUrge(level){
+  checks.unshift({ts:urgeTs||Date.now(), act:level});
+  store('secondthought_checks',checks);
+  urgeTs=null;
+  const t=checksToday();
+  const msgs={
+    no:`Then let it pass. The price will do exactly what it was going to do — whether you watch or not.<span class="sm">That was urge #${t} today. Your plan didn't change between #1 and #${t}.</span>`,
+    maybe:`Then there's nothing to act on yet. Watching won't turn a maybe into a yes — only a real reason will.<span class="sm">Urge #${t} today, noticed and set down.</span>`,
+    yes:`Okay — that's a decision, not an itch. If it's a buy, take it through <a onclick="show('pause')">The Pause</a> first.<span class="sm">Logged as a real reason, not a compulsion.</span>`
+  };
+  document.getElementById('urgeBox').innerHTML=`<div class="calm-msg">${msgs[level]}</div>`;
+  setTimeout(()=>{ const b=document.getElementById('urgeBtn'); if(b) b.style.display='block'; }, 450);
+  renderItch();
+}
+function startOfDay(t){ const d=new Date(t); d.setHours(0,0,0,0); return d.getTime(); }
+function checksToday(){ const s=startOfDay(Date.now()); return checks.filter(c=>c.ts>=s).length; }
+
+function renderItch(){
+  const today=checksToday();
+  const week=checks.filter(c=>c.ts>=startOfDay(Date.now()-6*864e5)).length;
+  let avg=0;
+  if(checks.length){
+    const firstDay=startOfDay(checks[checks.length-1].ts);
+    const dayCount=Math.max(1, Math.round((startOfDay(Date.now())-firstDay)/864e5)+1);
+    avg=checks.length/dayCount;
+  }
+  document.getElementById('itchStats').innerHTML=`
+    <div class="stat"><div class="n">${today}</div><div class="l">urges today</div></div>
+    <div class="stat"><div class="n">${week}</div><div class="l">this week</div></div>
+    <div class="stat"><div class="n">${avg?avg.toFixed(1):'0'}</div><div class="l">daily average</div></div>`;
+
+  const labels=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const days=[];
+  for(let i=6;i>=0;i--) days.push({d:startOfDay(Date.now()-i*864e5), n:0});
+  checks.forEach(c=>{ const slot=days.find(x=>x.d===startOfDay(c.ts)); if(slot) slot.n++; });
+  const max=Math.max(1,...days.map(x=>x.n));
+  document.getElementById('spark').innerHTML=days.map((x,i)=>{
+    const isToday=i===6;
+    const h=x.n?Math.round((x.n/max)*100):0;
+    return `<div class="col"><div class="bar ${isToday?'today':''}" style="height:${h}%" title="${x.n} urges"></div><div class="lab">${labels[new Date(x.d).getDay()][0]}</div></div>`;
+  }).join('');
+
+  let ins='';
+  if(!checks.length) ins='Tap the button the next time you feel the pull to check. Noticing is the whole exercise.';
+  else if(today===0) ins='No urges logged today. Quiet is a kind of progress.';
+  else if(avg && today>avg*1.5) ins='A heavier day than usual. Be gentle — anxious markets make for itchy fingers.';
+  else if(avg && today<=avg) ins='At or below your usual pace today. The grip is loosening.';
+  else ins='Every noticed urge is a rep. They add up quietly.';
+  document.getElementById('itchInsight').textContent=ins;
+}
+
+init();
+</script>

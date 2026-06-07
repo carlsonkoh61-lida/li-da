@@ -1,0 +1,331 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Li-Da · Tasks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f6f5; --card:#fff; --ink:#20262b; --soft:#5f6b71; --faint:#97a1a6;
+    --line:#e3e8e7; --teal:#2f6b5d; --teal-soft:#e7f0ec;
+    --todo:#8b96a0; --prog:#2f6b5d; --blocked:#b06a2c; --done:#7fa99b; --heat-soft:#f1e4d2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:'Hanken Grotesk',system-ui,sans-serif;
+    line-height:1.5;-webkit-font-smoothing:antialiased;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--card)}
+  .brand{display:flex;align-items:center;gap:11px}
+  .brand .mark{font-family:'Fraunces',serif;font-weight:600;font-size:21px}
+  .brand .sub{font-size:12.5px;color:var(--soft);font-weight:600;border-left:1px solid var(--line);padding-left:11px}
+  .gear{cursor:pointer;font-size:17px;color:var(--soft);transition:.2s}.gear:hover{color:var(--ink);transform:rotate(30deg)}
+  main{flex:1;display:flex;min-height:0}
+
+  .tasks{width:360px;border-right:1px solid var(--line);background:var(--card);display:flex;flex-direction:column;min-height:0}
+  .glance{padding:13px 18px;border-bottom:1px solid var(--line);font-size:13px;display:flex;gap:14px;flex-wrap:wrap}
+  .glance b{font-family:'Fraunces',serif;font-size:16px}
+  .glance .g-over b{color:var(--blocked)} .glance .g-today b{color:var(--teal)}
+  .hd{padding:13px 18px 8px;display:flex;justify-content:space-between;align-items:center}
+  .hd h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+  .tlist{overflow-y:auto;padding:2px 14px 16px;flex:1}
+  .task{border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:9px;position:relative}
+  .task .t{font-weight:600;font-size:14.5px;margin-bottom:7px;line-height:1.3;padding-right:42px}
+  .task.done .t{color:var(--faint);text-decoration:line-through}
+  .task .row{display:flex;flex-wrap:wrap;gap:7px;align-items:center;font-size:12px;color:var(--soft)}
+  .pill{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;color:#fff}
+  .pill.todo{background:var(--todo)}.pill.prog{background:var(--prog)}.pill.blocked{background:var(--blocked)}.pill.done{background:var(--done)}
+  .due{font-weight:600}.due.over{color:var(--blocked)}.due.today{color:var(--teal)}.who{color:var(--faint)}
+  .tbtns{position:absolute;top:9px;right:10px;display:flex;gap:4px}
+  .tbtns button{border:none;background:none;cursor:pointer;color:var(--faint);font-size:14px;padding:2px;border-radius:5px;line-height:1}
+  .tbtns button:hover{color:var(--ink);background:var(--bg)}
+  .empty{color:var(--faint);text-align:center;padding:30px 12px;font-size:14px;line-height:1.6}
+
+  .chat{flex:1;display:flex;flex-direction:column;min-height:0}
+  .log{flex:1;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:13px}
+  .intro{max-width:560px;margin:auto;text-align:center;color:var(--soft)}
+  .intro h3{font-family:'Fraunces',serif;font-size:24px;color:var(--ink);margin-bottom:8px;font-weight:600}
+  .intro p{font-size:14.5px;margin-bottom:4px}
+  .msg{max-width:76%;padding:12px 15px;border-radius:15px;font-size:15px;line-height:1.55;animation:rise .35s ease both;white-space:pre-wrap}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .msg.you{align-self:flex-end;background:var(--teal);color:#fff;border-bottom-right-radius:5px}
+  .msg.lida{align-self:flex-start;background:var(--card);border:1px solid var(--line);border-bottom-left-radius:5px}
+  .msg.lida .nm{font-family:'Fraunces',serif;font-size:12px;color:var(--teal);font-weight:600;margin-bottom:4px}
+  .did{align-self:flex-start;font-size:12.5px;color:var(--teal);background:var(--teal-soft);border:1px solid #cfe0d8;border-radius:10px;padding:7px 12px}
+  .msg.err{align-self:flex-start;background:#fbe7e7;border:1px solid #f0caca;color:#9a3b3b;font-size:14px}
+  .typing{align-self:flex-start;color:var(--faint);font-size:14px;font-style:italic}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;padding:0 18px 10px}
+  .chip{font-family:inherit;font-size:13px;font-weight:600;color:var(--teal);background:var(--teal-soft);border:1px solid #cfe0d8;border-radius:20px;padding:8px 14px;cursor:pointer}
+  .chip:hover{background:#dcebe4}
+  .composer{display:flex;gap:10px;padding:14px 18px;border-top:1px solid var(--line);background:var(--card)}
+  .composer input{flex:1;font-family:inherit;font-size:15px;border:1px solid var(--line);border-radius:12px;padding:12px 15px;outline:none}
+  .composer input:focus{border-color:var(--teal)}
+  .composer button{font-family:inherit;font-weight:700;font-size:14px;color:#fff;background:var(--teal);border:none;border-radius:12px;padding:0 22px;cursor:pointer}
+  .composer button:disabled{opacity:.45;cursor:not-allowed}
+
+  .scrim{position:fixed;inset:0;background:rgba(20,30,28,.5);backdrop-filter:blur(4px);display:none;place-items:center;z-index:30;padding:18px}
+  .scrim.show{display:grid}
+  .kcard{width:100%;max-width:430px;background:var(--card);border-radius:18px;padding:24px;box-shadow:0 30px 70px -20px rgba(0,0,0,.4)}
+  .kcard h2{font-family:'Fraunces',serif;font-size:19px;margin-bottom:6px}
+  .kcard p{font-size:13px;color:var(--soft);line-height:1.55;margin-bottom:14px}.kcard a{color:var(--teal);font-weight:600}
+  .kcard label{display:block;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);font-weight:700;margin:10px 0 7px}
+  .kcard input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:14px;font-family:inherit;outline:none}
+  .kcard input:focus{border-color:var(--teal)}
+  .kcard .rowb{display:flex;gap:9px;margin-top:18px}.kcard .rowb button{flex:1;font-weight:600;font-size:14px;padding:12px;border-radius:10px;cursor:pointer;font-family:inherit}
+  .kcard .save{background:var(--teal);color:#fff;border:none}.kcard .close{background:none;color:var(--ink);border:1px solid var(--line)}
+  .note{font-size:11px;color:var(--faint);margin-top:13px;border-top:1px solid var(--line);padding-top:11px;line-height:1.5}
+  @media(max-width:760px){main{flex-direction:column}.tasks{width:100%;max-height:42vh;border-right:none;border-bottom:1px solid var(--line)}}
+</style>
+
+<header>
+  <div class="brand"><span class="mark">Li-Da</span><span class="sub">Your Tasks</span></div>
+  <div style="display:flex;align-items:center;gap:14px">
+    <span id="sync" style="font-size:12px;font-weight:600;color:var(--faint)">Local only</span>
+    <span class="gear" id="refresh" title="Refresh from cloud" style="font-size:15px">⟳</span>
+    <span class="gear" id="gear" title="Settings">⚙</span>
+  </div>
+</header>
+
+<main>
+  <section class="tasks">
+    <div class="glance" id="glance"></div>
+    <div class="hd"><h2>Tasks</h2></div>
+    <div class="tlist" id="tlist"></div>
+  </section>
+  <section class="chat">
+    <div class="log" id="log">
+      <div class="intro">
+        <h3>Just tell Li-Da what's going on</h3>
+        <p>“Add: fix the login bug, high priority, due Friday.”</p>
+        <p>“Mark the database task done.” · “What should I focus on today?”</p>
+        <p style="font-size:13px;color:var(--faint);margin-top:8px">She updates the list and advises you. This is your data, saved on this device.</p>
+      </div>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="composer">
+      <input id="q" placeholder="Tell me a task, or ask what to focus on…" onkeydown="if(event.key==='Enter')send()">
+      <button id="sendBtn" onclick="send()">Send</button>
+    </div>
+  </section>
+</main>
+
+<div class="scrim" id="scrim">
+  <div class="kcard">
+    <h2>Wake Li-Da</h2>
+    <p>She runs on your own Anthropic API key (the same one from before works). Get one at
+      <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>. Stored only in this browser.</p>
+    <label>Anthropic API key</label>
+    <input id="keyInput" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+    <label style="margin-top:16px">Supabase URL <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--faint)">— for cross-device sync (optional)</span></label>
+    <input id="sbUrlInput" type="text" placeholder="https://xxxx.supabase.co" autocomplete="off" spellcheck="false">
+    <label>Supabase anon key</label>
+    <input id="sbKeyInput" type="password" placeholder="eyJhbGci..." autocomplete="off" spellcheck="false">
+    <div class="rowb"><button class="save" onclick="saveKey()">Save</button><button class="close" onclick="closeKey()">Close</button></div>
+    <div class="note">Leave the Supabase fields blank to keep tasks on this device only. Filled in, your tasks sync everywhere. Keep your keys private; set a spend cap in the Anthropic console.</div>
+  </div>
+</div>
+
+<script>
+const MODEL='claude-haiku-4-5-20251001';
+let API_KEY='';
+const history=[];
+let tasks=[]; // {title,status,assignee,priority,due}  due = ISO date string or null
+let busy=false;
+const $=id=>document.getElementById(id);
+const SMAP={'todo':'todo','in progress':'prog','blocked':'blocked','done':'done'};
+
+function store(k,v){try{localStorage.setItem(k,v)}catch(_){}}
+function recall(k){try{return localStorage.getItem(k)}catch(_){return null}}
+
+let SB_URL='', SB_KEY='';
+function sbOn(){ return !!(SB_URL && SB_KEY); }
+function sbHeaders(extra){ return Object.assign({'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'}, extra||{}); }
+function setSync(t,c){ const e=$('sync'); if(e){ e.textContent=t; e.style.color=c||'var(--faint)'; } }
+async function cloudLoad(){
+  const res=await fetch(`${SB_URL}/rest/v1/lida_store?id=eq.tasks&select=data`,{headers:sbHeaders()});
+  if(!res.ok) throw new Error('load '+res.status);
+  const rows=await res.json(); return rows[0]?rows[0].data:null;
+}
+async function cloudSave(){
+  const res=await fetch(`${SB_URL}/rest/v1/lida_store`,{method:'POST',
+    headers:sbHeaders({'Prefer':'resolution=merge-duplicates,return=minimal'}),
+    body:JSON.stringify([{id:'tasks',data:tasks}])});
+  if(!res.ok) throw new Error('save '+res.status);
+}
+function saveTasks(){
+  store('lida_tasks',JSON.stringify(tasks));
+  if(sbOn()){ setSync('Syncing…','var(--teal)'); cloudSave().then(()=>setSync('✓ Synced','var(--teal)')).catch(()=>setSync('⚠ Sync failed','var(--blocked)')); }
+}
+
+function loadKey(){
+  API_KEY=recall('nova_key')||''; SB_URL=recall('lida_sb_url')||''; SB_KEY=recall('lida_sb_key')||'';
+  $('keyInput').value=API_KEY; $('sbUrlInput').value=SB_URL; $('sbKeyInput').value=SB_KEY;
+}
+$('gear').onclick=()=>{$('scrim').classList.add('show');$('keyInput').focus();};
+$('refresh').onclick=()=>{ if(sbOn()) pull(); };
+function closeKey(){$('scrim').classList.remove('show');}
+function saveKey(){
+  API_KEY=$('keyInput').value.trim(); SB_URL=$('sbUrlInput').value.trim().replace(/\/$/,''); SB_KEY=$('sbKeyInput').value.trim();
+  store('nova_key',API_KEY); store('lida_sb_url',SB_URL); store('lida_sb_key',SB_KEY);
+  closeKey();
+  if(sbOn()) pull(); else setSync('Local only');
+}
+async function pull(){
+  setSync('Syncing…','var(--teal)');
+  try{ const d=await cloudLoad(); if(d){tasks=d;renderTasks();} else { await cloudSave(); } setSync('✓ Synced','var(--teal)'); }
+  catch(e){ setSync('⚠ Offline (local)','var(--blocked)'); }
+}
+
+function startOfDay(t){const d=new Date(t);d.setHours(0,0,0,0);return d.getTime();}
+function daysUntil(iso){ if(!iso) return null; return Math.round((startOfDay(new Date(iso))-startOfDay(Date.now()))/864e5); }
+function isoFromDays(n){ if(n===null||n===undefined||isNaN(n)) return null; const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+function fmtDue(iso){ const d=daysUntil(iso); if(d===null) return null;
+  if(d<0) return {txt:`Overdue ${-d}d`,cls:'over'}; if(d===0) return {txt:'Due today',cls:'today'}; return {txt:`Due in ${d}d`,cls:''}; }
+
+function renderGlance(){
+  const act=tasks.filter(t=>t.status.toLowerCase()!=='done');
+  const over=act.filter(t=>{const d=daysUntil(t.due);return d!==null&&d<0;}).length;
+  const today=act.filter(t=>daysUntil(t.due)===0).length;
+  const blocked=act.filter(t=>t.status.toLowerCase()==='blocked').length;
+  $('glance').innerHTML=`<span class="g-over"><b>${over}</b> overdue</span><span class="g-today"><b>${today}</b> due today</span><span><b>${blocked}</b> blocked</span><span><b>${act.length}</b> open</span>`;
+}
+function renderTasks(){
+  renderGlance();
+  if(!tasks.length){ $('tlist').innerHTML='<div class="empty">No tasks yet.<br>Tell Li-Da your first one →</div>'; return; }
+  const order={blocked:0,'in progress':1,todo:2,done:3};
+  const sorted=[...tasks].sort((a,b)=>(order[a.status.toLowerCase()]??2)-(order[b.status.toLowerCase()]??2));
+  $('tlist').innerHTML=sorted.map(t=>{
+    const i=tasks.indexOf(t);
+    const cls=SMAP[t.status.toLowerCase()]||'todo';
+    const dd=fmtDue(t.due); const done=cls==='done';
+    return `<div class="task ${done?'done':''}">
+      <div class="tbtns">
+        <button title="Mark done" onclick="quickDone(${i})">✓</button>
+        <button title="Delete" onclick="quickDel(${i})">✕</button>
+      </div>
+      <div class="t">${t.title.replace(/</g,'&lt;')}</div>
+      <div class="row"><span class="pill ${cls}">${t.status}</span>
+        ${done||!dd?'':`<span class="due ${dd.cls}">${dd.txt}</span>`}
+        <span class="who">· ${t.assignee||'—'} · ${t.priority||'—'}</span></div>
+    </div>`;
+  }).join('');
+}
+function quickDone(i){ if(tasks[i]){tasks[i].status='Done';saveTasks();renderTasks();} }
+function quickDel(i){ tasks.splice(i,1);saveTasks();renderTasks(); }
+
+function tasksForModel(){
+  return tasks.map(t=>({title:t.title,status:t.status,assignee:t.assignee,priority:t.priority,
+    dueDate:t.due,daysUntilDue:daysUntil(t.due),overdue:(daysUntil(t.due)!==null&&daysUntil(t.due)<0&&t.status.toLowerCase()!=='done')}));
+}
+function systemPrompt(){
+  const today=new Date().toISOString().slice(0,10);
+  return `You are Li-Da, a warm, encouraging personal task manager. Today is ${today}.
+The user talks in plain language. You can BOTH advise AND change their task list.
+Respond with ONE valid JSON object and nothing else — no markdown, no backticks. Schema:
+{"reply": "<warm, concise reply to the user; put any advice here>", "actions": [ <zero or more actions> ]}
+Action types:
+{"type":"add","title":"...","status":"Todo|In Progress|Blocked|Done","assignee":"...","priority":"High|Medium|Low","dueInDays": <integer or null>}
+{"type":"complete","match":"<distinctive words from the task's title>"}
+{"type":"update","match":"<words from title>","changes":{ "status":"...","assignee":"...","priority":"...","dueInDays":<int>,"title":"..." }}
+{"type":"delete","match":"<words from title>"}
+Rules: Only include actions the user clearly requested. For pure questions/advice, return "actions": []. dueInDays is relative to today (0 = today, negative = overdue). If the user doesn't give a field, pick a sensible default (status Todo, priority Medium, assignee "Me"). Match tasks by distinctive title words, case-insensitive. Base all advice ONLY on the current list. Keep "reply" short and friendly.
+Current task list: ${JSON.stringify(tasksForModel())}`;
+}
+
+function applyActions(actions){
+  const done=[];
+  (actions||[]).forEach(a=>{
+    if(a.type==='add'&&a.title){
+      tasks.push({title:a.title,status:a.status||'Todo',assignee:a.assignee||'Me',priority:a.priority||'Medium',due:isoFromDays(a.dueInDays)});
+      done.push(`added “${a.title}”`);
+    } else if(a.type==='complete'&&a.match){
+      const t=findTask(a.match); if(t){t.status='Done';done.push(`marked “${t.title}” done`);}
+    } else if(a.type==='delete'&&a.match){
+      const t=findTask(a.match); if(t){tasks.splice(tasks.indexOf(t),1);done.push(`deleted “${t.title}”`);}
+    } else if(a.type==='update'&&a.match){
+      const t=findTask(a.match);
+      if(t&&a.changes){
+        const c=a.changes;
+        if(c.status)t.status=c.status; if(c.assignee)t.assignee=c.assignee;
+        if(c.priority)t.priority=c.priority; if(c.title)t.title=c.title;
+        if(c.dueInDays!==undefined)t.due=isoFromDays(c.dueInDays);
+        done.push(`updated “${t.title}”`);
+      }
+    }
+  });
+  if(done.length){ saveTasks(); renderTasks(); }
+  return done;
+}
+function findTask(m){ const q=String(m).toLowerCase(); return tasks.find(t=>t.title.toLowerCase().includes(q))||tasks.find(t=>q.includes(t.title.toLowerCase())); }
+
+const CHIPS=["Brief me on today","What's overdue?","What should I prioritise?","What's blocked?"];
+function renderChips(){ $('chips').innerHTML=CHIPS.map(c=>`<button class="chip" onclick="send('${c.replace(/'/g,"\\'")}')">${c}</button>`).join(''); }
+
+function addMsg(cls,html){ $('log').querySelector('.intro')?.remove();
+  const d=document.createElement('div'); d.className=cls; d.innerHTML=html; $('log').appendChild(d);
+  d.scrollIntoView({behavior:'smooth',block:'end'}); return d; }
+
+async function send(preset){
+  const q=(preset||$('q').value).trim();
+  if(!q||busy) return;
+  if(!API_KEY){$('scrim').classList.add('show');$('keyInput').focus();return;}
+  $('q').value=''; busy=true; $('sendBtn').disabled=true;
+  addMsg('msg you', q.replace(/</g,'&lt;'));
+  history.push({role:'user',content:q});
+  const typing=document.createElement('div'); typing.className='typing'; typing.textContent='Li-Da is thinking…';
+  $('log').appendChild(typing); typing.scrollIntoView({behavior:'smooth',block:'end'});
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'content-type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:MODEL,max_tokens:900,system:systemPrompt(),messages:history})
+    });
+    const data=await res.json(); typing.remove();
+    if(!res.ok||data.error){
+      const m=(data.error&&data.error.message)||('HTTP '+res.status); busy=false;$('sendBtn').disabled=false;history.pop();
+      if(res.status===401) addMsg('msg err','Your API key was rejected — open ⚙ and check it.');
+      else if(/credit|balance/i.test(m)) addMsg('msg err','Out of credits — add a little balance in the Anthropic console.');
+      else addMsg('msg err','Could not reach Li-Da: '+m);
+      return;
+    }
+    let raw=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join(' ').trim();
+    history.push({role:'assistant',content:raw});
+    let reply=raw, actions=[];
+    try{
+      const clean=raw.replace(/```json/gi,'').replace(/```/g,'').trim();
+      const parsed=JSON.parse(clean);
+      reply=parsed.reply||''; actions=parsed.actions||[];
+    }catch(_){ /* if not JSON, just show the text */ }
+    const did=applyActions(actions);
+    if(reply) addMsg('msg lida','<div class="nm">Li-Da</div>'+reply.replace(/</g,'&lt;'));
+    if(did.length) addMsg('did','✓ '+did.join(' · '));
+  }catch(e){ typing.remove(); history.pop(); addMsg('msg err','Network error reaching Anthropic — open this file directly (not the preview) and check your connection.'); }
+  busy=false;$('sendBtn').disabled=false;
+}
+
+function seedArr(){
+  return [
+    {title:'Fix dashboard loading bug',status:'Blocked',assignee:'Me',priority:'High',due:isoFromDays(-2)},
+    {title:'Design new login page',status:'In Progress',assignee:'Me',priority:'High',due:isoFromDays(2)},
+    {title:'Write API documentation',status:'Todo',assignee:'Me',priority:'Medium',due:isoFromDays(5)},
+  ];
+}
+async function init(){
+  loadKey();
+  const cached=recall('lida_tasks');
+  tasks = cached ? (()=>{try{return JSON.parse(cached)}catch(_){return seedArr()}})() : seedArr();
+  if(sbOn()){
+    setSync('Syncing…','var(--teal)');
+    try{
+      const d=await cloudLoad();
+      if(d){ tasks=d; } else { await cloudSave(); }  // first run: push local up
+      setSync('✓ Synced','var(--teal)');
+    }catch(e){ setSync('⚠ Offline (local)','var(--blocked)'); }
+  } else {
+    if(!cached) saveTasks();
+    setSync('Local only');
+  }
+  renderTasks(); renderChips();
+  if(!API_KEY) $('scrim').classList.add('show');
+}
+init();
+</script>

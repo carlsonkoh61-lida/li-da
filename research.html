@@ -9,133 +9,97 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --ink:      #0F1117;
-    --panel:    #181B24;
-    --line:     #262A36;
-    --paper:    #ECE7DE;
-    --muted:    #868EA1;
-    --amber:    #E0A341;
-    --up:       #5BBF8A;
-    --down:     #E0746A;
+    --ink:    #0F1117;
+    --panel:  #181B24;
+    --line:   #262A36;
+    --paper:  #ECE7DE;
+    --muted:  #868EA1;
+    --amber:  #E0A341;
+    --up:     #5BBF8A;
+    --down:   #E0746A;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background: var(--ink);
-    color: var(--paper);
+    background: var(--ink); color: var(--paper);
     font-family: "Inter", system-ui, sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 7vh 20px 40px;
-    -webkit-font-smoothing: antialiased;
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 7vh 20px 60px; -webkit-font-smoothing: antialiased;
   }
-  .wrap { width: 100%; max-width: 540px; }
+  .wrap { width: 100%; max-width: 560px; }
 
-  .eyebrow {
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 12px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--amber);
-    margin-bottom: 14px;
-  }
-  h1 {
-    font-family: "Fraunces", serif;
-    font-weight: 400;
-    font-size: clamp(30px, 7vw, 44px);
-    line-height: 1.05;
-    letter-spacing: -0.01em;
-    margin-bottom: 10px;
-  }
+  .eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--amber); margin-bottom: 14px; }
+  h1 { font-family: "Fraunces", serif; font-weight: 400; font-size: clamp(30px, 7vw, 44px);
+    line-height: 1.05; letter-spacing: -0.01em; margin-bottom: 10px; }
   .sub { color: var(--muted); font-size: 15px; line-height: 1.5; margin-bottom: 32px; }
 
   .row { display: flex; gap: 10px; }
   input {
-    flex: 1;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    color: var(--paper);
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 16px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 14px 16px;
-    outline: none;
+    flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    color: var(--paper); font-family: "IBM Plex Mono", monospace; font-size: 16px;
+    letter-spacing: 0.08em; text-transform: uppercase; padding: 14px 16px; outline: none;
     transition: border-color 0.15s;
   }
   input:focus { border-color: var(--amber); }
   input::placeholder { color: var(--muted); text-transform: none; letter-spacing: normal; }
   button {
-    background: var(--amber);
-    color: var(--ink);
-    border: none;
-    border-radius: 10px;
-    font-family: "Inter", sans-serif;
-    font-weight: 600;
-    font-size: 15px;
-    padding: 0 22px;
-    cursor: pointer;
-    transition: opacity 0.15s;
+    background: var(--amber); color: var(--ink); border: none; border-radius: 10px;
+    font-family: "Inter", sans-serif; font-weight: 600; font-size: 15px; padding: 0 22px;
+    cursor: pointer; transition: opacity 0.15s;
   }
   button:hover { opacity: 0.9; }
   button:disabled { opacity: 0.5; cursor: default; }
 
-  .card {
-    margin-top: 26px;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 26px;
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  .card.show { animation: rise 0.35s ease forwards; }
+  /* ---- price card ---- */
+  .card { margin-top: 26px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 26px; }
+  .show { opacity: 0; transform: translateY(8px); animation: rise 0.35s ease forwards; }
   @keyframes rise { to { opacity: 1; transform: none; } }
-
   .card .name { font-size: 14px; color: var(--muted); margin-bottom: 4px; }
   .card .ticker { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--amber); letter-spacing: 0.1em; }
-  .price {
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 42px;
-    font-weight: 500;
-    margin: 12px 0 6px;
-    font-variant-numeric: tabular-nums;
-  }
+  .price { font-family: "IBM Plex Mono", monospace; font-size: 42px; font-weight: 500; margin: 12px 0 6px; font-variant-numeric: tabular-nums; }
   .delta { font-family: "IBM Plex Mono", monospace; font-size: 15px; font-variant-numeric: tabular-nums; }
-  .delta.up { color: var(--up); }
-  .delta.down { color: var(--down); }
-
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px 24px;
-    margin-top: 22px;
-    padding-top: 20px;
-    border-top: 1px solid var(--line);
-  }
+  .delta.up { color: var(--up); } .delta.down { color: var(--down); }
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 24px; margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line); }
   .stat { display: flex; justify-content: space-between; font-size: 14px; }
   .stat span:first-child { color: var(--muted); }
   .stat span:last-child { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
-
   .asof { margin-top: 18px; font-size: 12px; color: var(--muted); font-family: "IBM Plex Mono", monospace; }
-  .error { margin-top: 26px; color: var(--down); font-size: 15px; }
-  .foot {
-    margin-top: 40px;
-    font-size: 13px;
-    color: var(--muted);
-    border-top: 1px solid var(--line);
-    padding-top: 18px;
-    line-height: 1.5;
-  }
+
+  /* ---- the read ---- */
+  .read { margin-top: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 26px; }
+  .read.thinking { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 14px; }
+  .read-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .read-eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-right: auto; }
+  .lean { font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--amber); color: var(--amber); }
+  .conf { font-family: "Inter", sans-serif; font-size: 12px; color: var(--muted); padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); }
+  .conf-reason { font-size: 13px; color: var(--muted); line-height: 1.4; margin-bottom: 18px; }
+  .read-summary { font-family: "Fraunces", serif; font-size: 20px; line-height: 1.32; margin-bottom: 22px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  @media (max-width: 520px) { .cols { grid-template-columns: 1fr; } }
+  .col h4 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .col.bull h4 { color: var(--up); } .col.bear h4 { color: var(--down); }
+  .col ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .col li { font-size: 14px; line-height: 1.45; color: var(--paper); padding-left: 16px; position: relative; }
+  .col li::before { content: ""; position: absolute; left: 0; top: 8px; width: 6px; height: 6px; border-radius: 50%; }
+  .col.bull li::before { background: var(--up); } .col.bear li::before { background: var(--down); }
+  .block { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .lab { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+  .block p { font-size: 14px; line-height: 1.5; }
+  .act ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .act li { font-size: 14px; line-height: 1.45; padding-left: 16px; position: relative; color: var(--paper); }
+  .act li::before { content: "\203A"; position: absolute; left: 0; color: var(--amber); }
+  .read-note { margin-top: 18px; font-size: 12px; color: var(--muted); font-family: "IBM Plex Mono", monospace; }
+
+  .error { margin-top: 16px; color: var(--down); font-size: 15px; }
+  .foot { margin-top: 40px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 18px; line-height: 1.5; }
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="eyebrow">Li-Da · research desk</div>
     <h1>Pull a read.</h1>
-    <p class="sub">Step one: a live quote, flowing in through your own server. The thinking comes next.</p>
+    <p class="sub">A live quote, then the thinking: bull case, bear case, and an honest lean — so you can make the call.</p>
 
     <div class="row">
       <input id="symbol" placeholder="Ticker, e.g. AAPL" autocomplete="off" spellcheck="false" />
@@ -144,7 +108,7 @@
 
     <div id="out"></div>
 
-    <p class="foot">Data, not a verdict. The call is always yours.</p>
+    <p class="foot">Data and reasoning, never a verdict. The call is always yours.</p>
   </div>
 
 <script>
@@ -155,47 +119,90 @@
   function money(n) {
     return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  }
+
+  function priceCard(d) {
+    const up = d.change >= 0;
+    const arrow = up ? "\u25B2" : "\u25BC";
+    const sign = up ? "+" : "";
+    return `
+      <div class="card show">
+        <div class="name">${esc(d.name)}</div>
+        <div class="ticker">${esc(d.symbol)}</div>
+        <div class="price">${money(d.price)}</div>
+        <div class="delta ${up ? "up" : "down"}">${arrow} ${sign}${money(d.change)}  (${sign}${d.percent.toFixed(2)}%)</div>
+        <div class="stats">
+          <div class="stat"><span>Open</span><span>${money(d.open)}</span></div>
+          <div class="stat"><span>Prev close</span><span>${money(d.prevClose)}</span></div>
+          <div class="stat"><span>Day high</span><span>${money(d.high)}</span></div>
+          <div class="stat"><span>Day low</span><span>${money(d.low)}</span></div>
+        </div>
+        <div class="asof">as of ${new Date(d.asOf).toLocaleString()}</div>
+      </div>`;
+  }
+
+  function renderRead(r) {
+    const bull = (r.bull || []).map((p) => `<li>${esc(p)}</li>`).join("");
+    const bear = (r.bear || []).map((p) => `<li>${esc(p)}</li>`).join("");
+    const act = (r.before_you_act || []).map((p) => `<li>${esc(p)}</li>`).join("");
+    return `
+      <div class="read show">
+        <div class="read-head">
+          <span class="read-eyebrow">The read</span>
+          <span class="lean">${esc(r.lean || "—")}</span>
+          <span class="conf">${esc(r.confidence || "—")} confidence</span>
+        </div>
+        <div class="conf-reason">${esc(r.confidence_reason || "")}</div>
+        <div class="read-summary">${esc(r.summary || "")}</div>
+        <div class="cols">
+          <div class="col bull"><h4>Bull case</h4><ul>${bull}</ul></div>
+          <div class="col bear"><h4>Bear case</h4><ul>${bear}</ul></div>
+        </div>
+        <div class="block"><div class="lab">Levels to watch</div><p>${esc(r.levels || "—")}</p></div>
+        <div class="block act"><div class="lab">Before you act</div><ul>${act}</ul></div>
+        <div class="read-note">Reasoning, not advice. You decide.</div>
+      </div>`;
+  }
+
+  async function getAnalysis(sym) {
+    const box = document.createElement("div");
+    box.className = "read thinking";
+    box.textContent = "Thinking through the read\u2026 (a few seconds)";
+    out.appendChild(box);
+    try {
+      const res = await fetch("/api/analyze?symbol=" + encodeURIComponent(sym));
+      const d = await res.json();
+      if (!res.ok) {
+        box.className = "read";
+        box.innerHTML = `<p class="error" style="margin:0">${esc(d.error || "Couldn't run the read.")}</p>`;
+        return;
+      }
+      box.outerHTML = renderRead(d.read);
+    } catch (e) {
+      box.className = "read";
+      box.innerHTML = `<p class="error" style="margin:0">Couldn't reach the read service. Try again.</p>`;
+    }
+  }
 
   async function getRead() {
     const sym = input.value.trim().toUpperCase();
     if (!sym) { input.focus(); return; }
-
-    btn.disabled = true;
-    btn.textContent = "Reading…";
-    out.innerHTML = "";
-
+    btn.disabled = true; btn.textContent = "Reading\u2026"; out.innerHTML = "";
     try {
       const res = await fetch("/api/market?symbol=" + encodeURIComponent(sym));
       const d = await res.json();
-
       if (!res.ok) {
-        out.innerHTML = `<p class="error">${d.error || "Something went wrong."}</p>`;
+        out.innerHTML = `<p class="error">${esc(d.error || "Something went wrong.")}</p>`;
         return;
       }
-
-      const up = d.change >= 0;
-      const arrow = up ? "▲" : "▼";
-      const sign = up ? "+" : "";
-
-      out.innerHTML = `
-        <div class="card show">
-          <div class="name">${d.name}</div>
-          <div class="ticker">${d.symbol}</div>
-          <div class="price">${money(d.price)}</div>
-          <div class="delta ${up ? "up" : "down"}">${arrow} ${sign}${money(d.change)}  (${sign}${d.percent.toFixed(2)}%)</div>
-          <div class="stats">
-            <div class="stat"><span>Open</span><span>${money(d.open)}</span></div>
-            <div class="stat"><span>Prev close</span><span>${money(d.prevClose)}</span></div>
-            <div class="stat"><span>Day high</span><span>${money(d.high)}</span></div>
-            <div class="stat"><span>Day low</span><span>${money(d.low)}</span></div>
-          </div>
-          <div class="asof">as of ${new Date(d.asOf).toLocaleString()}</div>
-        </div>`;
-    } catch (err) {
+      out.innerHTML = priceCard(d);
+      getAnalysis(sym); // runs after the price is on screen
+    } catch (e) {
       out.innerHTML = `<p class="error">Couldn't reach the data server. Try again in a moment.</p>`;
     } finally {
-      btn.disabled = false;
-      btn.textContent = "Get read";
+      btn.disabled = false; btn.textContent = "Get read";
     }
   }
 

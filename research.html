@@ -50,11 +50,14 @@
   button:hover { opacity: 0.9; }
   button:disabled { opacity: 0.5; cursor: default; }
 
-  /* ---- price card ---- */
-  .card { margin-top: 26px; background: var(--panel); border: 1px solid var(--line);
+  /* ---- shared card ---- */
+  .card, .read, .evidence { margin-top: 16px; background: var(--panel); border: 1px solid var(--line);
     border-radius: 14px; padding: 26px; }
+  .card { margin-top: 26px; }
   .show { opacity: 0; transform: translateY(8px); animation: rise 0.35s ease forwards; }
   @keyframes rise { to { opacity: 1; transform: none; } }
+
+  /* ---- price card ---- */
   .card .name { font-size: 14px; color: var(--muted); margin-bottom: 4px; }
   .card .ticker { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--amber); letter-spacing: 0.1em; }
   .price { font-family: "IBM Plex Mono", monospace; font-size: 42px; font-weight: 500; margin: 12px 0 6px; font-variant-numeric: tabular-nums; }
@@ -67,7 +70,6 @@
   .asof { margin-top: 18px; font-size: 12px; color: var(--muted); font-family: "IBM Plex Mono", monospace; }
 
   /* ---- the read ---- */
-  .read { margin-top: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 26px; }
   .read.thinking { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 14px; }
   .read-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
   .read-eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-right: auto; }
@@ -91,6 +93,23 @@
   .act li::before { content: "\203A"; position: absolute; left: 0; color: var(--amber); }
   .read-note { margin-top: 18px; font-size: 12px; color: var(--muted); font-family: "IBM Plex Mono", monospace; }
 
+  /* ---- evidence (what it read) ---- */
+  .evidence h3 { font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 18px; }
+  .figs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
+  @media (max-width: 420px) { .figs { grid-template-columns: 1fr; } }
+  .fig { display: flex; justify-content: space-between; font-size: 14px; border-bottom: 1px dotted var(--line); padding-bottom: 6px; }
+  .fig span:first-child { color: var(--muted); }
+  .fig span:last-child { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  .analyst { margin-top: 18px; font-size: 14px; line-height: 1.5; }
+  .analyst .bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; margin-top: 10px; background: var(--line); }
+  .analyst .bar i { display: block; height: 100%; }
+  .analyst .bar .b { background: var(--up); } .analyst .bar .h { background: var(--muted); } .analyst .bar .s { background: var(--down); }
+  .news { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
+  .news a { color: var(--paper); text-decoration: none; font-size: 14px; line-height: 1.45; display: block; transition: color 0.15s; }
+  .news a:hover { color: var(--amber); }
+  .news .src { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 2px; }
+  .empty { color: var(--muted); font-size: 14px; }
+
   .error { margin-top: 16px; color: var(--down); font-size: 15px; }
   .foot { margin-top: 40px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 18px; line-height: 1.5; }
 </style>
@@ -99,7 +118,7 @@
   <div class="wrap">
     <div class="eyebrow">Li-Da · research desk</div>
     <h1>Pull a read.</h1>
-    <p class="sub">A live quote, then the thinking: bull case, bear case, and an honest lean — so you can make the call.</p>
+    <p class="sub">A live quote, an honest read, and the figures and headlines behind it — so you can make the call.</p>
 
     <div class="row">
       <input id="symbol" placeholder="Ticker, e.g. AAPL" autocomplete="off" spellcheck="false" />
@@ -122,6 +141,15 @@
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   }
+  function fmtCap(millions) {
+    if (millions == null) return null;
+    const v = millions * 1e6;
+    if (v >= 1e12) return "$" + (v / 1e12).toFixed(2) + "T";
+    if (v >= 1e9) return "$" + (v / 1e9).toFixed(2) + "B";
+    return "$" + (v / 1e6).toFixed(0) + "M";
+  }
+  const num = (n, d = 2) => (n == null ? null : Number(n).toFixed(d));
+  const pct = (n) => (n == null ? null : Number(n).toFixed(1) + "%");
 
   function priceCard(d) {
     const up = d.change >= 0;
@@ -166,6 +194,62 @@
       </div>`;
   }
 
+  function renderEvidence(d) {
+    const f = d.figures || {};
+    const rows = [];
+    const cap = fmtCap(f.marketCap); if (cap) rows.push(["Market cap", cap]);
+    if (num(f.pe) != null) rows.push(["P/E (TTM)", num(f.pe)]);
+    if (f.low52 != null && f.high52 != null) rows.push(["52-week range", money(f.low52) + " – " + money(f.high52)]);
+    if (pct(f.profitMargin) != null) rows.push(["Profit margin", pct(f.profitMargin)]);
+    if (pct(f.revGrowth) != null) rows.push(["Revenue growth", pct(f.revGrowth)]);
+    if (num(f.debtToEquity) != null) rows.push(["Debt / equity", num(f.debtToEquity)]);
+    if (num(f.currentRatio) != null) rows.push(["Current ratio", num(f.currentRatio)]);
+    if (num(f.eps) != null) rows.push(["EPS (TTM)", "$" + num(f.eps)]);
+
+    const figsHtml = rows.length
+      ? `<div class="figs">${rows.map((r) => `<div class="fig"><span>${esc(r[0])}</span><span>${esc(r[1])}</span></div>`).join("")}</div>`
+      : `<p class="empty">No fundamentals available for this ticker.</p>`;
+
+    let analystHtml = "";
+    const a = d.analyst;
+    if (a) {
+      const buy = a.strongBuy + a.buy, hold = a.hold, sell = a.sell + a.strongSell;
+      const total = buy + hold + sell || 1;
+      const label = buy > sell ? "Buy-leaning" : sell > buy ? "Sell-leaning" : "Mixed";
+      analystHtml = `
+        <div class="block">
+          <div class="lab">Analyst consensus${a.period ? " · " + esc(a.period) : ""}</div>
+          <div class="analyst">${label} — ${buy} buy · ${hold} hold · ${sell} sell
+            <div class="bar">
+              <i class="b" style="width:${(buy / total) * 100}%"></i>
+              <i class="h" style="width:${(hold / total) * 100}%"></i>
+              <i class="s" style="width:${(sell / total) * 100}%"></i>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    const news = d.news || [];
+    const newsHtml = news.length
+      ? `<div class="news">${news
+          .map((n) => {
+            const date = n.datetime ? new Date(n.datetime * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
+            const meta = [n.source, date].filter(Boolean).map(esc).join(" · ");
+            const inner = `<span class="src">${meta}</span>${esc(n.headline)}`;
+            return n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener">${inner}</a>` : `<a>${inner}</a>`;
+          })
+          .join("")}</div>`
+      : `<div class="news"><p class="empty">No recent news in the last 7 days.</p></div>`;
+
+    return `
+      <div class="evidence show">
+        <h3>What it read</h3>
+        ${figsHtml}
+        ${analystHtml}
+        ${newsHtml}
+      </div>`;
+  }
+
   async function getAnalysis(sym) {
     const box = document.createElement("div");
     box.className = "read thinking";
@@ -180,6 +264,7 @@
         return;
       }
       box.outerHTML = renderRead(d.read);
+      out.insertAdjacentHTML("beforeend", renderEvidence(d));
     } catch (e) {
       box.className = "read";
       box.innerHTML = `<p class="error" style="margin:0">Couldn't reach the read service. Try again.</p>`;
@@ -198,7 +283,7 @@
         return;
       }
       out.innerHTML = priceCard(d);
-      getAnalysis(sym); // runs after the price is on screen
+      getAnalysis(sym);
     } catch (e) {
       out.innerHTML = `<p class="error">Couldn't reach the data server. Try again in a moment.</p>`;
     } finally {

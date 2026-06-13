@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Li-Da · Research desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink:      #0F1117;
+    --panel:    #181B24;
+    --line:     #262A36;
+    --paper:    #ECE7DE;
+    --muted:    #868EA1;
+    --amber:    #E0A341;
+    --up:       #5BBF8A;
+    --down:     #E0746A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: "Inter", system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 7vh 20px 40px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { width: 100%; max-width: 540px; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-family: "Fraunces", serif;
+    font-weight: 400;
+    font-size: clamp(30px, 7vw, 44px);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    margin-bottom: 10px;
+  }
+  .sub { color: var(--muted); font-size: 15px; line-height: 1.5; margin-bottom: 32px; }
+
+  .row { display: flex; gap: 10px; }
+  input {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--paper);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 16px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 14px 16px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus { border-color: var(--amber); }
+  input::placeholder { color: var(--muted); text-transform: none; letter-spacing: normal; }
+  button {
+    background: var(--amber);
+    color: var(--ink);
+    border: none;
+    border-radius: 10px;
+    font-family: "Inter", sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 0 22px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.9; }
+  button:disabled { opacity: 0.5; cursor: default; }
+
+  .card {
+    margin-top: 26px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 26px;
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  .card.show { animation: rise 0.35s ease forwards; }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  .card .name { font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+  .card .ticker { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--amber); letter-spacing: 0.1em; }
+  .price {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 42px;
+    font-weight: 500;
+    margin: 12px 0 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .delta { font-family: "IBM Plex Mono", monospace; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .delta.up { color: var(--up); }
+  .delta.down { color: var(--down); }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 24px;
+    margin-top: 22px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+  }
+  .stat { display: flex; justify-content: space-between; font-size: 14px; }
+  .stat span:first-child { color: var(--muted); }
+  .stat span:last-child { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+
+  .asof { margin-top: 18px; font-size: 12px; color: var(--muted); font-family: "IBM Plex Mono", monospace; }
+  .error { margin-top: 26px; color: var(--down); font-size: 15px; }
+  .foot {
+    margin-top: 40px;
+    font-size: 13px;
+    color: var(--muted);
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="eyebrow">Li-Da · research desk</div>
+    <h1>Pull a read.</h1>
+    <p class="sub">Step one: a live quote, flowing in through your own server. The thinking comes next.</p>
+
+    <div class="row">
+      <input id="symbol" placeholder="Ticker, e.g. AAPL" autocomplete="off" spellcheck="false" />
+      <button id="go">Get read</button>
+    </div>
+
+    <div id="out"></div>
+
+    <p class="foot">Data, not a verdict. The call is always yours.</p>
+  </div>
+
+<script>
+  const input = document.getElementById("symbol");
+  const btn = document.getElementById("go");
+  const out = document.getElementById("out");
+
+  function money(n) {
+    return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  async function getRead() {
+    const sym = input.value.trim().toUpperCase();
+    if (!sym) { input.focus(); return; }
+
+    btn.disabled = true;
+    btn.textContent = "Reading…";
+    out.innerHTML = "";
+
+    try {
+      const res = await fetch("/api/market?symbol=" + encodeURIComponent(sym));
+      const d = await res.json();
+
+      if (!res.ok) {
+        out.innerHTML = `<p class="error">${d.error || "Something went wrong."}</p>`;
+        return;
+      }
+
+      const up = d.change >= 0;
+      const arrow = up ? "▲" : "▼";
+      const sign = up ? "+" : "";
+
+      out.innerHTML = `
+        <div class="card show">
+          <div class="name">${d.name}</div>
+          <div class="ticker">${d.symbol}</div>
+          <div class="price">${money(d.price)}</div>
+          <div class="delta ${up ? "up" : "down"}">${arrow} ${sign}${money(d.change)}  (${sign}${d.percent.toFixed(2)}%)</div>
+          <div class="stats">
+            <div class="stat"><span>Open</span><span>${money(d.open)}</span></div>
+            <div class="stat"><span>Prev close</span><span>${money(d.prevClose)}</span></div>
+            <div class="stat"><span>Day high</span><span>${money(d.high)}</span></div>
+            <div class="stat"><span>Day low</span><span>${money(d.low)}</span></div>
+          </div>
+          <div class="asof">as of ${new Date(d.asOf).toLocaleString()}</div>
+        </div>`;
+    } catch (err) {
+      out.innerHTML = `<p class="error">Couldn't reach the data server. Try again in a moment.</p>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Get read";
+    }
+  }
+
+  btn.addEventListener("click", getRead);
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") getRead(); });
+  input.focus();
+</script>
+</body>
+</html>

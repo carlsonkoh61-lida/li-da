@@ -1,9 +1,9 @@
 // Vercel serverless function → https://li-da.vercel.app/api/analyze?symbol=AAPL
 // Put this at:  /api/analyze.js   (replaces the previous version)
 //
-// Runs entirely server-side, so both your keys stay off the browser.
-// Now pulls FOUR things from Finnhub — quote, news, basic financials, and
-// analyst recommendations — then hands them to Claude for a grounded read.
+// Pulls quote, news, basic financials, analyst recommendations, and the company
+// profile from Finnhub, FILTERS the news down to headlines actually about this
+// company, then hands it all to Claude for a grounded read.
 
 const SYSTEM_PROMPT = `You are the analysis engine for one person's private stock-research tool.
 You are NOT a financial advisor and must never give an order to obey. Your job is decision-support:
@@ -35,6 +35,27 @@ Rules:
   "before_you_act": ["a question or reminder that pushes the reader to make their own decision"]
 }`;
 
+// Build the words that mean "this headline is actually about this company":
+// the ticker, the cleaned company name, and its first distinctive word.
+function nameTerms(name, symbol) {
+  const terms = new Set();
+  if (symbol) terms.add(symbol.toLowerCase());
+  if (name) {
+    const core = name
+      .toLowerCase()
+      .replace(/[.,&]/g, " ")
+      .replace(/\b(inc|incorporated|corp|corporation|co|company|ltd|limited|plc|holdings?|group|the|sa|ag|nv|class [a-z])\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (core) {
+      terms.add(core);
+      const first = core.split(" ")[0];
+      if (first.length >= 3) terms.add(first);
+    }
+  }
+  return [...terms].filter((t) => t.length >= 3);
+}
+
 export default async function handler(req, res) {
   const symbol = (req.query.symbol || "").toUpperCase().trim();
   if (!symbol) return res.status(400).json({ error: "Add a symbol, e.g. /api/analyze?symbol=AAPL" });
@@ -51,44 +72,54 @@ export default async function handler(req, res) {
     const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
     const fmt = (d) => d.toISOString().slice(0, 10);
 
-    // Four calls at once — all free-tier endpoints.
-    const [quoteRes, newsRes, metricRes, recRes] = await Promise.all([
+    // Five calls at once — all free-tier endpoints.
+    const [quoteRes, newsRes, metricRes, recRes, profRes] = await Promise.all([
       fetch(`${base}/quote?symbol=${symbol}&token=${FINNHUB}`),
       fetch(`${base}/company-news?symbol=${symbol}&from=${fmt(weekAgo)}&to=${fmt(today)}&token=${FINNHUB}`),
       fetch(`${base}/stock/metric?symbol=${symbol}&metric=all&token=${FINNHUB}`),
       fetch(`${base}/stock/recommendation?symbol=${symbol}&token=${FINNHUB}`),
+      fetch(`${base}/stock/profile2?symbol=${symbol}&token=${FINNHUB}`),
     ]);
 
     const quote = await quoteRes.json();
     const newsRaw = await newsRes.json();
     const metricRaw = await metricRes.json();
     const recRaw = await recRes.json();
+    const profile = await profRes.json();
 
     if (!quote || quote.c === 0) {
       return res.status(404).json({ error: `No data for "${symbol}". Check the ticker.` });
     }
 
-    // --- news: enrich for the UI, trim for the prompt ---
-    const news = Array.isArray(newsRaw)
-      ? newsRaw.slice(0, 6).map((n) => ({
-          headline: n.headline,
-          summary: (n.summary || "").slice(0, 300),
-          source: n.source || "",
-          url: n.url || "",
-          datetime: n.datetime || null,
-        }))
-      : [];
+    // --- news: filter to items actually about this company, then enrich ---
+    const terms = nameTerms(profile && profile.name, symbol);
+    const onTopic = (n) => {
+      const blob = (`${n.headline || ""} ${n.summary || ""}`).toLowerCase();
+      return terms.some((t) => blob.includes(t));
+    };
+    const allNews = Array.isArray(newsRaw) ? newsRaw : [];
+    const filtered = allNews.filter(onTopic);
+    // use the filtered set; if it wiped everything out, fall back to a few unfiltered
+    const chosen = (filtered.length ? filtered : allNews).slice(0, 6);
 
-    // --- fundamentals: pick a curated, useful subset (skip whatever's missing) ---
+    const news = chosen.map((n) => ({
+      headline: n.headline,
+      summary: (n.summary || "").slice(0, 300),
+      source: n.source || "",
+      url: n.url || "",
+      datetime: n.datetime || null,
+    }));
+
+    // --- fundamentals: curated subset (skip whatever's missing) ---
     const m = (metricRaw && metricRaw.metric) || {};
     const pick = (v) => (typeof v === "number" ? v : null);
     const figures = {
-      marketCap: pick(m.marketCapitalization),            // in millions USD
+      marketCap: pick(m.marketCapitalization),
       pe: pick(m.peTTM != null ? m.peTTM : m.peNormalizedAnnual),
       high52: pick(m["52WeekHigh"]),
       low52: pick(m["52WeekLow"]),
-      profitMargin: pick(m.netProfitMarginTTM),           // %
-      revGrowth: pick(m.revenueGrowthTTMYoy),             // %
+      profitMargin: pick(m.netProfitMarginTTM),
+      revGrowth: pick(m.revenueGrowthTTMYoy),
       debtToEquity: pick(m["totalDebt/totalEquityQuarterly"]),
       currentRatio: pick(m.currentRatioQuarterly),
       eps: pick(m.epsTTM),
@@ -108,9 +139,9 @@ export default async function handler(req, res) {
         }
       : null;
 
-    // What Claude sees (trim news to headline + summary to keep the prompt lean).
     const factPack = {
       symbol,
+      company: (profile && profile.name) || symbol,
       price: quote.c,
       change: quote.d,
       percent: quote.dp,
@@ -160,7 +191,6 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: "Claude's reply wasn't in the expected format. Try again." });
     }
 
-    // Return the read PLUS the raw inputs, so the page can show what it read.
     return res.status(200).json({ symbol, read, news, figures, analyst });
   } catch (err) {
     return res.status(500).json({ error: "Something went wrong running the read. Try again in a moment." });

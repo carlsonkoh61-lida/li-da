@@ -34,24 +34,24 @@
   .sub { color: var(--muted); font-size: 15px; line-height: 1.5; margin-bottom: 32px; }
 
   .row { display: flex; gap: 10px; }
-  input {
+  input.symbol {
     flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
     color: var(--paper); font-family: "IBM Plex Mono", monospace; font-size: 16px;
     letter-spacing: 0.08em; text-transform: uppercase; padding: 14px 16px; outline: none;
     transition: border-color 0.15s;
   }
-  input:focus { border-color: var(--amber); }
-  input::placeholder { color: var(--muted); text-transform: none; letter-spacing: normal; }
-  button {
+  input.symbol:focus { border-color: var(--amber); }
+  input.symbol::placeholder { color: var(--muted); text-transform: none; letter-spacing: normal; }
+  button.primary {
     background: var(--amber); color: var(--ink); border: none; border-radius: 10px;
     font-family: "Inter", sans-serif; font-weight: 600; font-size: 15px; padding: 0 22px;
     cursor: pointer; transition: opacity 0.15s;
   }
-  button:hover { opacity: 0.9; }
-  button:disabled { opacity: 0.5; cursor: default; }
+  button.primary:hover { opacity: 0.9; }
+  button.primary:disabled { opacity: 0.5; cursor: default; }
 
   /* ---- shared card ---- */
-  .card, .read, .evidence { margin-top: 16px; background: var(--panel); border: 1px solid var(--line);
+  .card, .read, .evidence, .move { margin-top: 16px; background: var(--panel); border: 1px solid var(--line);
     border-radius: 14px; padding: 26px; }
   .card { margin-top: 26px; }
   .show { opacity: 0; transform: translateY(8px); animation: rise 0.35s ease forwards; }
@@ -93,14 +93,14 @@
   .act li::before { content: "\203A"; position: absolute; left: 0; color: var(--amber); }
   .read-note { margin-top: 18px; font-size: 12px; color: var(--muted); font-family: "IBM Plex Mono", monospace; }
 
-  /* ---- evidence (what it read) ---- */
-  .evidence h3 { font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 18px; }
+  /* ---- evidence ---- */
+  .evidence h3, .move h3 { font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 18px; }
   .figs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
   @media (max-width: 420px) { .figs { grid-template-columns: 1fr; } }
   .fig { display: flex; justify-content: space-between; font-size: 14px; border-bottom: 1px dotted var(--line); padding-bottom: 6px; }
   .fig span:first-child { color: var(--muted); }
   .fig span:last-child { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
-  .analyst { margin-top: 18px; font-size: 14px; line-height: 1.5; }
+  .analyst { margin-top: 4px; font-size: 14px; line-height: 1.5; }
   .analyst .bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; margin-top: 10px; background: var(--line); }
   .analyst .bar i { display: block; height: 100%; }
   .analyst .bar .b { background: var(--up); } .analyst .bar .h { background: var(--muted); } .analyst .bar .s { background: var(--down); }
@@ -110,6 +110,28 @@
   .news .src { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 2px; }
   .empty { color: var(--muted); font-size: 14px; }
 
+  /* ---- your move ---- */
+  .movesub { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 18px; }
+  .seg { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .seg button { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 500; font-family: "Inter", sans-serif; cursor: pointer; transition: all 0.15s; }
+  .seg button.active { background: rgba(224,163,65,0.12); border-color: var(--amber); color: var(--amber); }
+  .fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
+  @media (max-width: 480px) { .fields { grid-template-columns: 1fr; } }
+  .fields label { display: flex; flex-direction: column; gap: 6px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .fields input { background: var(--ink); border: 1px solid var(--line); border-radius: 8px; color: var(--paper); font-family: "IBM Plex Mono", monospace; font-size: 15px; padding: 10px 12px; outline: none; }
+  .fields input:focus { border-color: var(--amber); }
+  .rr { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--muted); margin-bottom: 16px; min-height: 18px; }
+  .rr.good { color: var(--up); } .rr.bad { color: var(--down); }
+  .reason { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+  .reason textarea { background: var(--ink); border: 1px solid var(--line); border-radius: 8px; color: var(--paper); font-family: "Inter", sans-serif; font-size: 14px; padding: 12px; outline: none; resize: vertical; line-height: 1.5; }
+  .reason textarea:focus { border-color: var(--amber); }
+  .logbtn { width: 100%; height: 46px; background: var(--amber); color: var(--ink); border: none; border-radius: 10px; font-family: "Inter", sans-serif; font-weight: 600; font-size: 15px; cursor: pointer; transition: opacity 0.15s; }
+  .logbtn:hover { opacity: 0.9; }
+  .logbtn:disabled { opacity: 0.5; cursor: default; }
+  .logmsg { margin-top: 14px; font-size: 14px; line-height: 1.5; }
+  .logmsg.ok { color: var(--up); }
+  .logmsg.err { color: var(--down); }
+
   .error { margin-top: 16px; color: var(--down); font-size: 15px; }
   .foot { margin-top: 40px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 18px; line-height: 1.5; }
 </style>
@@ -118,11 +140,11 @@
   <div class="wrap">
     <div class="eyebrow">Li-Da · research desk</div>
     <h1>Pull a read.</h1>
-    <p class="sub">A live quote, an honest read, and the figures and headlines behind it — so you can make the call.</p>
+    <p class="sub">A live quote, an honest read, the figures behind it — then you set your exits and log the call.</p>
 
     <div class="row">
-      <input id="symbol" placeholder="Ticker, e.g. AAPL" autocomplete="off" spellcheck="false" />
-      <button id="go">Get read</button>
+      <input id="symbol" class="symbol" placeholder="Ticker, e.g. AAPL" autocomplete="off" spellcheck="false" />
+      <button id="go" class="primary">Get read</button>
     </div>
 
     <div id="out"></div>
@@ -134,13 +156,10 @@
   const input = document.getElementById("symbol");
   const btn = document.getElementById("go");
   const out = document.getElementById("out");
+  let ctx = null; // { symbol, price, read }
 
-  function money(n) {
-    return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
-  function esc(s) {
-    return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  }
+  function money(n) { return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
   function fmtCap(millions) {
     if (millions == null) return null;
     const v = millions * 1e6;
@@ -231,23 +250,103 @@
 
     const news = d.news || [];
     const newsHtml = news.length
-      ? `<div class="news">${news
-          .map((n) => {
+      ? `<div class="news">${news.map((n) => {
             const date = n.datetime ? new Date(n.datetime * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
             const meta = [n.source, date].filter(Boolean).map(esc).join(" · ");
             const inner = `<span class="src">${meta}</span>${esc(n.headline)}`;
             return n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener">${inner}</a>` : `<a>${inner}</a>`;
-          })
-          .join("")}</div>`
+          }).join("")}</div>`
       : `<div class="news"><p class="empty">No recent news in the last 7 days.</p></div>`;
 
+    return `<div class="evidence show"><h3>What it read</h3>${figsHtml}${analystHtml}${newsHtml}</div>`;
+  }
+
+  function renderMove() {
     return `
-      <div class="evidence show">
-        <h3>What it read</h3>
-        ${figsHtml}
-        ${analystHtml}
-        ${newsHtml}
+      <div class="move show">
+        <h3>Your move</h3>
+        <p class="movesub">Lock your exits before you're in the trade. The read is an input — this is your decision, on record.</p>
+        <div class="seg" id="decision">
+          <button data-v="buy" class="active">Buy</button>
+          <button data-v="watch">Watch</button>
+          <button data-v="sell">Sell</button>
+          <button data-v="skip">Skip</button>
+        </div>
+        <div class="fields">
+          <label>Entry <input id="f-entry" inputmode="decimal" /></label>
+          <label>Stop-loss <input id="f-stop" inputmode="decimal" /></label>
+          <label>Take-profit <input id="f-target" inputmode="decimal" /></label>
+        </div>
+        <div class="rr" id="rr"></div>
+        <label class="reason">Why this, why now? What would make you wrong?
+          <textarea id="f-reason" rows="3" placeholder="A sentence to your future self."></textarea>
+        </label>
+        <button id="logbtn" class="logbtn">Log to journal</button>
+        <div id="logmsg" class="logmsg"></div>
       </div>`;
+  }
+
+  function updateRR() {
+    const e = parseFloat(document.getElementById("f-entry").value);
+    const s = parseFloat(document.getElementById("f-stop").value);
+    const t = parseFloat(document.getElementById("f-target").value);
+    const el = document.getElementById("rr");
+    if (isNaN(e) || isNaN(s) || isNaN(t)) { el.textContent = ""; el.className = "rr"; return; }
+    const risk = Math.abs(e - s), reward = Math.abs(t - e);
+    if (risk === 0) { el.textContent = "Stop can't equal entry."; el.className = "rr bad"; return; }
+    const rr = reward / risk;
+    el.textContent = `Risk : Reward ≈ 1 : ${rr.toFixed(1)}`;
+    el.className = "rr " + (rr >= 2 ? "good" : rr < 1 ? "bad" : "");
+  }
+
+  async function logDecision() {
+    if (!ctx) return;
+    const decision = (document.querySelector("#decision button.active") || {}).dataset
+      ? document.querySelector("#decision button.active").dataset.v : null;
+    const payload = {
+      symbol: ctx.symbol,
+      price: ctx.price,
+      ai_lean: ctx.read && ctx.read.lean,
+      ai_confidence: ctx.read && ctx.read.confidence,
+      ai_summary: ctx.read && ctx.read.summary,
+      decision,
+      entry: document.getElementById("f-entry").value,
+      stop_loss: document.getElementById("f-stop").value,
+      take_profit: document.getElementById("f-target").value,
+      reasoning: document.getElementById("f-reason").value,
+    };
+    const msg = document.getElementById("logmsg");
+    const b = document.getElementById("logbtn");
+    b.disabled = true; b.textContent = "Saving…"; msg.textContent = ""; msg.className = "logmsg";
+    try {
+      const r = await fetch("/api/log", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const d = await r.json();
+      if (!r.ok) { msg.className = "logmsg err"; msg.textContent = d.error || "Couldn't save."; b.disabled = false; b.textContent = "Log to journal"; return; }
+      const s = d.saved || {};
+      const bits = [];
+      if (s.stop_loss != null) bits.push("stop " + money(s.stop_loss));
+      if (s.take_profit != null) bits.push("target " + money(s.take_profit));
+      msg.className = "logmsg ok";
+      msg.textContent = "Saved to your journal ✓  " + bits.join(" · ");
+      b.textContent = "Logged ✓";
+      setTimeout(() => { b.disabled = false; b.textContent = "Log again"; }, 1800);
+    } catch (e) {
+      msg.className = "logmsg err"; msg.textContent = "Couldn't reach the journal. Try again.";
+      b.disabled = false; b.textContent = "Log to journal";
+    }
+  }
+
+  function wireMove() {
+    const seg = document.getElementById("decision");
+    seg.addEventListener("click", (e) => {
+      if (e.target.tagName === "BUTTON") {
+        seg.querySelectorAll("button").forEach((x) => x.classList.remove("active"));
+        e.target.classList.add("active");
+      }
+    });
+    if (ctx && ctx.price != null) document.getElementById("f-entry").value = Number(ctx.price).toFixed(2);
+    ["f-entry", "f-stop", "f-target"].forEach((id) => document.getElementById(id).addEventListener("input", updateRR));
+    document.getElementById("logbtn").addEventListener("click", logDecision);
   }
 
   async function getAnalysis(sym) {
@@ -263,8 +362,11 @@
         box.innerHTML = `<p class="error" style="margin:0">${esc(d.error || "Couldn't run the read.")}</p>`;
         return;
       }
+      if (ctx) ctx.read = d.read;
       box.outerHTML = renderRead(d.read);
       out.insertAdjacentHTML("beforeend", renderEvidence(d));
+      out.insertAdjacentHTML("beforeend", renderMove());
+      wireMove();
     } catch (e) {
       box.className = "read";
       box.innerHTML = `<p class="error" style="margin:0">Couldn't reach the read service. Try again.</p>`;
@@ -274,14 +376,12 @@
   async function getRead() {
     const sym = input.value.trim().toUpperCase();
     if (!sym) { input.focus(); return; }
-    btn.disabled = true; btn.textContent = "Reading\u2026"; out.innerHTML = "";
+    btn.disabled = true; btn.textContent = "Reading\u2026"; out.innerHTML = ""; ctx = null;
     try {
       const res = await fetch("/api/market?symbol=" + encodeURIComponent(sym));
       const d = await res.json();
-      if (!res.ok) {
-        out.innerHTML = `<p class="error">${esc(d.error || "Something went wrong.")}</p>`;
-        return;
-      }
+      if (!res.ok) { out.innerHTML = `<p class="error">${esc(d.error || "Something went wrong.")}</p>`; return; }
+      ctx = { symbol: sym, price: d.price, read: null };
       out.innerHTML = priceCard(d);
       getAnalysis(sym);
     } catch (e) {

@@ -104,7 +104,26 @@
   .analyst .bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; margin-top: 10px; background: var(--line); }
   .analyst .bar i { display: block; height: 100%; }
   .analyst .bar .b { background: var(--up); } .analyst .bar .h { background: var(--muted); } .analyst .bar .s { background: var(--down); }
-  .news { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
+
+  /* ---- news take ---- */
+  .nt-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .signal { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .signal.positive { color: var(--up); border-color: var(--up); }
+  .signal.negative { color: var(--down); border-color: var(--down); }
+  .signal.mixed { color: var(--amber); border-color: var(--amber); }
+  .signal.quiet { color: var(--muted); border-color: var(--line); }
+  .nt-headline { font-size: 15px; font-weight: 500; line-height: 1.4; }
+  .nt-detail { font-size: 14px; line-height: 1.5; color: var(--paper); }
+  .nt-matters { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+  .nt-matters li { font-size: 13px; line-height: 1.45; color: var(--muted); padding-left: 14px; position: relative; }
+  .nt-matters li::before { content: "\00B7"; position: absolute; left: 2px; color: var(--amber); font-weight: 700; }
+  .sources { margin-top: 14px; }
+  .sources summary { cursor: pointer; font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); list-style: none; padding: 6px 0; transition: color 0.15s; }
+  .sources summary::-webkit-details-marker { display: none; }
+  .sources summary:hover { color: var(--amber); }
+  .sources summary::before { content: "\25B8  "; }
+  .sources[open] summary::before { content: "\25BE  "; }
+  .news { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
   .news a { color: var(--paper); text-decoration: none; font-size: 14px; line-height: 1.45; display: block; transition: color 0.15s; }
   .news a:hover { color: var(--amber); }
   .news .src { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 2px; }
@@ -140,7 +159,7 @@
   <div class="wrap">
     <div class="eyebrow">Li-Da · research desk</div>
     <h1>Pull a read.</h1>
-    <p class="sub">A live quote, an honest read, the figures behind it — then you set your exits and log the call.</p>
+    <p class="sub">A live quote, an honest read, the news distilled — then you set your exits and log the call.</p>
 
     <div class="row">
       <input id="symbol" class="symbol" placeholder="Ticker, e.g. AAPL" autocomplete="off" spellcheck="false" />
@@ -156,7 +175,7 @@
   const input = document.getElementById("symbol");
   const btn = document.getElementById("go");
   const out = document.getElementById("out");
-  let ctx = null; // { symbol, price, read }
+  let ctx = null;
 
   function money(n) { return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
@@ -248,15 +267,31 @@
         </div>`;
     }
 
+    // distilled news take + collapsible raw sources
+    const nt = (d.read && d.read.news_take) || null;
     const news = d.news || [];
-    const newsHtml = news.length
-      ? `<div class="news">${news.map((n) => {
-            const date = n.datetime ? new Date(n.datetime * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
-            const meta = [n.source, date].filter(Boolean).map(esc).join(" · ");
-            const inner = `<span class="src">${meta}</span>${esc(n.headline)}`;
-            return n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener">${inner}</a>` : `<a>${inner}</a>`;
-          }).join("")}</div>`
-      : `<div class="news"><p class="empty">No recent news in the last 7 days.</p></div>`;
+    const sig = (nt && nt.signal) || "quiet";
+    const matters = (nt && nt.what_matters ? nt.what_matters : []).map((x) => `<li>${esc(x)}</li>`).join("");
+    const sourceItems = news.length
+      ? news.map((n) => {
+          const date = n.datetime ? new Date(n.datetime * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
+          const meta = [n.source, date].filter(Boolean).map(esc).join(" · ");
+          const inner = `<span class="src">${meta}</span>${esc(n.headline)}`;
+          return n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener">${inner}</a>` : `<a>${inner}</a>`;
+        }).join("")
+      : `<p class="empty">No recent news in the last 7 days.</p>`;
+
+    const newsHtml = `
+      <div class="block">
+        <div class="lab">What the news says</div>
+        <div class="nt-head">
+          <span class="signal ${esc(sig)}">${esc(sig)}</span>
+          <span class="nt-headline">${esc(nt ? nt.headline : "No clear signal")}</span>
+        </div>
+        <p class="nt-detail">${esc(nt ? nt.detail : "")}</p>
+        ${matters ? `<ul class="nt-matters">${matters}</ul>` : ""}
+        <details class="sources"><summary>Sources (${news.length})</summary><div class="news">${sourceItems}</div></details>
+      </div>`;
 
     return `<div class="evidence show"><h3>What it read</h3>${figsHtml}${analystHtml}${newsHtml}</div>`;
   }
@@ -301,11 +336,10 @@
 
   async function logDecision() {
     if (!ctx) return;
-    const decision = (document.querySelector("#decision button.active") || {}).dataset
-      ? document.querySelector("#decision button.active").dataset.v : null;
+    const activeBtn = document.querySelector("#decision button.active");
+    const decision = activeBtn ? activeBtn.dataset.v : null;
     const payload = {
-      symbol: ctx.symbol,
-      price: ctx.price,
+      symbol: ctx.symbol, price: ctx.price,
       ai_lean: ctx.read && ctx.read.lean,
       ai_confidence: ctx.read && ctx.read.confidence,
       ai_summary: ctx.read && ctx.read.summary,

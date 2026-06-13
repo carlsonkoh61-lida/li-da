@@ -1,9 +1,9 @@
 // Vercel serverless function → https://li-da.vercel.app/api/analyze?symbol=AAPL
 // Put this at:  /api/analyze.js   (replaces the previous version)
 //
-// Pulls quote, news, basic financials, analyst recommendations, and the company
-// profile from Finnhub, FILTERS the news down to headlines actually about this
-// company, then hands it all to Claude for a grounded read.
+// Pulls quote, news, fundamentals, analyst recs, and profile from Finnhub,
+// filters the news to this company, then asks Claude for a grounded read AND
+// a distilled "news take" — so the page shows one judged summary, not a pile.
 
 const SYSTEM_PROMPT = `You are the analysis engine for one person's private stock-research tool.
 You are NOT a financial advisor and must never give an order to obey. Your job is decision-support:
@@ -15,13 +15,14 @@ balance-sheet ratios), and the latest analyst recommendation counts.
 Rules:
 - Always give a real bear case, weighted equally with the bull case. Never hide the risks.
 - Use concrete numbers from the fundamentals in your points where they matter (e.g. cite the margin,
-  the debt ratio, the 52-week range). This is what makes the read sharp. NEVER invent a figure that is
-  null or missing — if it's not in the data, don't cite it.
+  the debt ratio, the 52-week range). NEVER invent a figure that is null or missing.
 - Treat analyst consensus as one input, not gospel.
+- Synthesize the news into "news_take": read ALL the provided headlines and summaries, judge the overall
+  signal, and be honest about quality. If the news is thin, stale, or mostly generic market noise rather
+  than company-specific, say so plainly and set the signal to "quiet" or "mixed". Paraphrase everything in
+  your own words; never quote articles.
 - Your "lean" is one input, not a verdict. Set "confidence" honestly. Most real situations are "low" or
-  "medium"; reserve "high" for genuinely clear-cut cases where the fundamentals and news clearly align.
-- Ground everything strictly in the data provided. If something is thin or missing, say so plainly.
-- Paraphrase news in your own words; never quote articles at length.
+  "medium"; reserve "high" for genuinely clear-cut cases where fundamentals and news clearly align.
 - Keep every point short, plain, and jargon-free. No hype.
 - Return ONLY a JSON object — no markdown, no code fences, no text before or after — in exactly this shape:
 {
@@ -32,11 +33,15 @@ Rules:
   "confidence": "low" | "medium" | "high",
   "confidence_reason": "one short sentence on why",
   "levels": "plain-language note on price levels worth watching, or 'Not enough data'",
+  "news_take": {
+    "headline": "one short line distilling what the recent news amounts to",
+    "signal": "positive" | "negative" | "mixed" | "quiet",
+    "detail": "1-2 plain sentences: what it means for the stock and how much to trust it (flag thin/stale/noisy news)",
+    "what_matters": ["the item(s) that genuinely matter, paraphrased — empty array if nothing material"]
+  },
   "before_you_act": ["a question or reminder that pushes the reader to make their own decision"]
 }`;
 
-// Build the words that mean "this headline is actually about this company":
-// the ticker, the cleaned company name, and its first distinctive word.
 function nameTerms(name, symbol) {
   const terms = new Set();
   if (symbol) terms.add(symbol.toLowerCase());
@@ -67,12 +72,10 @@ export default async function handler(req, res) {
 
   try {
     const base = "https://finnhub.io/api/v1";
-
     const today = new Date();
     const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
     const fmt = (d) => d.toISOString().slice(0, 10);
 
-    // Five calls at once — all free-tier endpoints.
     const [quoteRes, newsRes, metricRes, recRes, profRes] = await Promise.all([
       fetch(`${base}/quote?symbol=${symbol}&token=${FINNHUB}`),
       fetch(`${base}/company-news?symbol=${symbol}&from=${fmt(weekAgo)}&to=${fmt(today)}&token=${FINNHUB}`),
@@ -91,7 +94,6 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: `No data for "${symbol}". Check the ticker.` });
     }
 
-    // --- news: filter to items actually about this company, then enrich ---
     const terms = nameTerms(profile && profile.name, symbol);
     const onTopic = (n) => {
       const blob = (`${n.headline || ""} ${n.summary || ""}`).toLowerCase();
@@ -99,8 +101,7 @@ export default async function handler(req, res) {
     };
     const allNews = Array.isArray(newsRaw) ? newsRaw : [];
     const filtered = allNews.filter(onTopic);
-    // use the filtered set; if it wiped everything out, fall back to a few unfiltered
-    const chosen = (filtered.length ? filtered : allNews).slice(0, 6);
+    const chosen = (filtered.length ? filtered : allNews).slice(0, 8);
 
     const news = chosen.map((n) => ({
       headline: n.headline,
@@ -110,7 +111,6 @@ export default async function handler(req, res) {
       datetime: n.datetime || null,
     }));
 
-    // --- fundamentals: curated subset (skip whatever's missing) ---
     const m = (metricRaw && metricRaw.metric) || {};
     const pick = (v) => (typeof v === "number" ? v : null);
     const figures = {
@@ -126,17 +126,9 @@ export default async function handler(req, res) {
       beta: pick(m.beta),
     };
 
-    // --- analyst recommendation: most recent period ---
     const r = Array.isArray(recRaw) && recRaw.length ? recRaw[0] : null;
     const analyst = r
-      ? {
-          strongBuy: r.strongBuy || 0,
-          buy: r.buy || 0,
-          hold: r.hold || 0,
-          sell: r.sell || 0,
-          strongSell: r.strongSell || 0,
-          period: r.period || "",
-        }
+      ? { strongBuy: r.strongBuy || 0, buy: r.buy || 0, hold: r.hold || 0, sell: r.sell || 0, strongSell: r.strongSell || 0, period: r.period || "" }
       : null;
 
     const factPack = {
@@ -159,14 +151,10 @@ export default async function handler(req, res) {
 
     const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": ANTHROPIC,
-        "anthropic-version": "2023-06-01",
-      },
+      headers: { "content-type": "application/json", "x-api-key": ANTHROPIC, "anthropic-version": "2023-06-01" },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 1200,
+        max_tokens: 1400,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userContent }],
       }),
@@ -177,11 +165,7 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: "Claude couldn't run: " + (aiData.error.message || "unknown error") });
     }
 
-    let text = (aiData.content || [])
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("\n")
-      .trim();
+    let text = (aiData.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
     text = text.replace(/^```(json)?/i, "").replace(/```$/, "").trim();
 
     let read;

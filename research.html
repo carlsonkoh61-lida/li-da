@@ -130,6 +130,16 @@
   .act li { font-size: 14px; line-height: 1.45; padding-left: 16px; position: relative; color: var(--paper); }
   .act li::before { content: "\203A"; position: absolute; left: 0; color: var(--violet-soft); }
   .read-note { margin-top: 18px; font-size: 12px; color: var(--muted); font-family: "IBM Plex Mono", monospace; }
+  /* ---- stress test ---- */
+  .stress .st-row { margin-bottom: 12px; }
+  .stress .st-key { font-family: "IBM Plex Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--violet-soft); margin-bottom: 3px; }
+  .stress .st-row p { font-size: 14px; line-height: 1.5; color: var(--paper); }
+  .st-frag { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+  .frag-pill { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .frag-pill.low { color: var(--up); border-color: rgba(74,222,154,0.5); }
+  .frag-pill.medium { color: var(--violet-soft); border-color: rgba(133,118,255,0.5); }
+  .frag-pill.high { color: var(--down); border-color: rgba(255,107,107,0.5); }
+  .frag-reason { font-size: 13px; color: var(--muted); line-height: 1.4; }
 
   /* ---- evidence ---- */
   .figs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
@@ -255,6 +265,19 @@
     const bull = (r.bull || []).map((p) => `<li>${esc(p)}</li>`).join("");
     const bear = (r.bear || []).map((p) => `<li>${esc(p)}</li>`).join("");
     const act = (r.before_you_act || []).map((p) => `<li>${esc(p)}</li>`).join("");
+    const st = r.stress_test;
+    const stressHtml = st
+      ? `<div class="block stress">
+          <div class="lab">Stress test</div>
+          <div class="st-row"><div class="st-key">Load-bearing assumption</div><p>${esc(st.load_bearing || "—")}</p></div>
+          <div class="st-row"><div class="st-key">Kill switch</div><p>${esc(st.kill_switch || "—")}</p></div>
+          <div class="st-row"><div class="st-key">Reality check</div><p>${esc(st.base_rate || "—")}</p></div>
+          <div class="st-frag">
+            <span class="frag-pill ${esc((st.fragility || "").toLowerCase())}">${esc(st.fragility || "—")} fragility</span>
+            <span class="frag-reason">${esc(st.fragility_reason || "")}</span>
+          </div>
+        </div>`
+      : "";
     const conf = (r.confidence || "low").toLowerCase();
     return `
       <div class="read show">
@@ -270,6 +293,7 @@
           <div class="col bull"><h4>Bull case</h4><ul>${bull}</ul></div>
           <div class="col bear"><h4>Bear case</h4><ul>${bear}</ul></div>
         </div>
+        ${stressHtml}
         <div class="block"><div class="lab">Levels to watch</div><p>${esc(r.levels || "—")}</p></div>
         <div class="block act"><div class="lab">Before you act</div><ul>${act}</ul></div>
         <div class="read-note">Reasoning, not advice. You decide.</div>

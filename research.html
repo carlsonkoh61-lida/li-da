@@ -222,6 +222,7 @@
   .tchip.down { color: var(--down); border-color: rgba(255,107,107,0.5); }
   .tchip.sideways { color: var(--violet-soft); border-color: rgba(133,118,255,0.4); }
   .tchip.hot { color: #F5B870; border-color: rgba(245,184,112,0.55); }
+  .tchip.regime { color: var(--violet-soft); border-color: rgba(133,118,255,0.4); }
   .tstat { color: var(--muted); font-size: 13px; }
   .tstat b { font-family: "IBM Plex Mono", monospace; color: var(--paper); font-weight: 500; }
   .tstat b.up { color: var(--up); } .tstat b.down { color: var(--down); }
@@ -416,6 +417,22 @@
         </div>`;
     }
 
+    // market regime (trend + volatility + volume)
+    const rg = d.regime || null;
+    let regimeHtml = "";
+    if (rg) {
+      const volMove = rg.avg_daily_move_pct != null ? ` · ~${rg.avg_daily_move_pct}%/day` : "";
+      regimeHtml = `
+        <div class="block">
+          <div class="lab">Market regime</div>
+          <div class="tech-row">
+            <span class="tchip regime">${esc(rg.label)}</span>
+            <span class="tstat">volatility <b>${esc(rg.volatility_state)}</b>${volMove}</span>
+            <span class="tstat">volume <b>${esc(rg.volume_state)}</b></span>
+          </div>
+        </div>`;
+    }
+
     let analystHtml = "";
     const a = d.analyst;
     if (a) {
@@ -460,7 +477,7 @@
         <details class="sources"><summary>Sources (${news.length})</summary><div class="news">${sourceItems}</div></details>
       </div>`;
 
-    return `<div class="evidence show"><h3>What it read</h3>${figsHtml}${techHtml}${peersHtml}${analystHtml}${newsHtml}</div>`;
+    return `<div class="evidence show"><h3>What it read</h3>${figsHtml}${techHtml}${regimeHtml}${peersHtml}${analystHtml}${newsHtml}</div>`;
   }
 
   function renderMove() {

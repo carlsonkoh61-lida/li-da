@@ -211,6 +211,16 @@
   .chart-loading { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 14px; padding: 40px 0; text-align: center; }
   .chart-empty { color: var(--muted); font-size: 14px; padding: 30px 0; text-align: center; }
 
+  /* ---- technicals ---- */
+  .tech-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .tchip { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .tchip.up { color: var(--up); border-color: rgba(74,222,154,0.5); }
+  .tchip.down { color: var(--down); border-color: rgba(255,107,107,0.5); }
+  .tchip.sideways { color: var(--violet-soft); border-color: rgba(133,118,255,0.4); }
+  .tstat { color: var(--muted); font-size: 13px; }
+  .tstat b { font-family: "IBM Plex Mono", monospace; color: var(--paper); font-weight: 500; }
+  .tstat b.up { color: var(--up); } .tstat b.down { color: var(--down); }
+
   /* ---- your move ---- */
   .movesub { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 18px; }
   .seg { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
@@ -380,6 +390,24 @@
       peersHtml = `<div class="block"><div class="lab">Versus peers</div><p class="empty">${esc(pt.detail)}</p></div>`;
     }
 
+    // technicals snapshot (the trend Li-Da now reads)
+    const t = d.technicals || null;
+    let techHtml = "";
+    if (t) {
+      const ma50dir = t.priceVsMA50 != null ? (t.priceVsMA50 >= 0 ? "up" : "down") : "";
+      const ma50txt = t.priceVsMA50 != null ? `<span class="tstat">vs MA50 <b class="${ma50dir}">${t.priceVsMA50 >= 0 ? "+" : ""}${t.priceVsMA50}%</b></span>` : "";
+      const rsiTxt = t.rsi != null ? `<span class="tstat">RSI <b>${t.rsi}</b> · ${esc(t.rsiState)}</span>` : "";
+      const offHi = t.pctOffHigh != null ? `<span class="tstat">off high <b>${t.pctOffHigh}%</b></span>` : "";
+      techHtml = `
+        <div class="block">
+          <div class="lab">Technicals</div>
+          <div class="tech-row">
+            <span class="tchip ${esc(t.trend)}">${esc(t.trend)}</span>
+            ${rsiTxt}${ma50txt}${offHi}
+          </div>
+        </div>`;
+    }
+
     let analystHtml = "";
     const a = d.analyst;
     if (a) {
@@ -424,7 +452,7 @@
         <details class="sources"><summary>Sources (${news.length})</summary><div class="news">${sourceItems}</div></details>
       </div>`;
 
-    return `<div class="evidence show"><h3>What it read</h3>${figsHtml}${peersHtml}${analystHtml}${newsHtml}</div>`;
+    return `<div class="evidence show"><h3>What it read</h3>${figsHtml}${techHtml}${peersHtml}${analystHtml}${newsHtml}</div>`;
   }
 
   function renderMove() {

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Li-Da · Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:#0B0D14; --panel:rgba(20,24,38,0.66); --line:rgba(255,255,255,0.08);
+    --paper:#EDEFF7; --muted:#8A92A8; --violet:#8576FF; --violet-2:#B39DFF; --violet-soft:#C9BEFF;
+    --up:#4ADE9A; --down:#FF6B6B;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(900px 620px at 78% -12%, rgba(133,118,255,0.12), transparent 60%),
+      radial-gradient(820px 720px at 16% 112%, rgba(133,118,255,0.10), transparent 60%);
+    background-attachment: fixed; color: var(--paper);
+    font-family: "Inter", system-ui, sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 8vh 20px 70px; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { width: 100%; max-width: 620px; }
+
+  .topnav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--violet-soft); }
+  .topnav a { font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.15s; }
+  .topnav a:hover { color: var(--violet-soft); }
+  h1 { font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: clamp(30px, 7vw, 44px); line-height: 1.04; letter-spacing: -0.02em; margin-bottom: 12px;
+    background: linear-gradient(118deg, var(--paper) 38%, var(--violet-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { color: var(--muted); font-size: 15px; line-height: 1.55; margin-bottom: 28px; }
+
+  .summary { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  .stat-chip { background: var(--panel); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; flex: 1; min-width: 120px; }
+  .stat-chip .n { font-family: "IBM Plex Mono", monospace; font-size: 22px; font-weight: 500; }
+  .stat-chip .l { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-top: 2px; }
+
+  .filter { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .filter label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  select { background: rgba(20,24,38,0.6); border: 1px solid var(--line); border-radius: 10px; color: var(--paper); font-family: "IBM Plex Mono", monospace; font-size: 14px; padding: 9px 12px; outline: none; cursor: pointer; }
+  select:focus { border-color: var(--violet); }
+
+  .entry { background: var(--panel); backdrop-filter: blur(16px) saturate(125%); border: 1px solid var(--line); border-radius: 16px; padding: 22px; margin-bottom: 14px;
+    box-shadow: 0 12px 44px -14px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05); transition: transform 0.2s, border-color 0.2s; }
+  .entry:hover { transform: translateY(-2px); border-color: rgba(133,118,255,0.22); }
+  .e-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .e-sym { font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 19px; letter-spacing: 0.02em; }
+  .e-badge { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); }
+  .e-badge.buy { color: var(--up); border-color: rgba(74,222,154,0.5); }
+  .e-badge.sell { color: var(--down); border-color: rgba(255,107,107,0.5); }
+  .e-badge.watch { color: var(--violet-soft); border-color: rgba(133,118,255,0.5); }
+  .e-badge.skip { color: var(--muted); }
+  .e-date { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); margin-left: auto; }
+
+  .e-levels { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .e-levels div span:first-child { color: var(--muted); text-transform: uppercase; font-size: 10px; letter-spacing: 0.06em; display: block; margin-bottom: 2px; }
+  .e-levels div span:last-child { font-family: "IBM Plex Mono", monospace; }
+
+  .e-ai { font-size: 13px; color: var(--muted); margin: 14px 0 6px; line-height: 1.5; }
+  .e-ai b { color: var(--violet-soft); font-weight: 500; }
+  .e-tag { font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-left: 6px; }
+  .e-reason { font-size: 14px; line-height: 1.5; color: var(--paper); margin: 10px 0; font-style: italic; }
+  .e-live { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); font-family: "IBM Plex Mono", monospace; font-size: 13px; }
+  .e-live .now { color: var(--paper); }
+  .e-move.up { color: var(--up); } .e-move.down { color: var(--down); } .e-move.flat { color: var(--muted); }
+  .e-status.up { color: var(--up); } .e-status.down { color: var(--down); } .e-status.muted { color: var(--muted); }
+
+  .empty, .error { color: var(--muted); font-size: 15px; text-align: center; padding: 40px 0; }
+  .error { color: var(--down); }
+  .loading { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 14px; text-align: center; padding: 40px 0; }
+  .foot { margin-top: 40px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 20px; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topnav">
+      <span class="eyebrow">Li-Da · journal</span>
+      <a href="/research.html">← Research desk</a>
+    </div>
+    <h1>The mirror.</h1>
+    <p class="sub">Every call you logged, checked against where the price sits now. Did the read hold? Did you follow your own rules?</p>
+
+    <div id="summary"></div>
+    <div id="filterbar"></div>
+    <div id="list"><div class="loading">Loading your journal…</div></div>
+
+    <p class="foot">A record, not a scoreboard. The point is to learn from your own calls — honestly.</p>
+  </div>
+
+<script>
+  const listEl = document.getElementById("list");
+  const summaryEl = document.getElementById("summary");
+  const filterEl = document.getElementById("filterbar");
+  let allRows = [];
+  let priceMap = {};
+
+  function money(n) { return n == null ? "—" : "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+  function fmtDate(iso) {
+    try { return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); }
+    catch (e) { return ""; }
+  }
+
+  function rr(e) {
+    if (e.entry == null || e.stop_loss == null || e.take_profit == null) return null;
+    const risk = Math.abs(e.entry - e.stop_loss), reward = Math.abs(e.take_profit - e.entry);
+    if (!risk) return null;
+    return "1 : " + (reward / risk).toFixed(1);
+  }
+
+  function status(e, cur) {
+    if (cur == null) return null;
+    const base = e.entry != null ? e.entry : e.price_at_log;
+    const dir = e.decision;
+    let movePct = base ? ((cur - base) / base) * 100 : null;
+    let moveTone = "flat";
+    if (movePct != null && Math.abs(movePct) >= 0.05) {
+      if (dir === "buy") moveTone = cur >= base ? "up" : "down";
+      else if (dir === "sell") moveTone = cur <= base ? "up" : "down";
+      else moveTone = cur >= base ? "up" : "down";
+    }
+    let level = null, levelTone = "muted";
+    if (dir === "buy") {
+      if (e.take_profit != null && cur >= e.take_profit) { level = "past your target"; levelTone = "up"; }
+      else if (e.stop_loss != null && cur <= e.stop_loss) { level = "past your stop"; levelTone = "down"; }
+      else if (e.take_profit != null || e.stop_loss != null) { level = "in range"; levelTone = "muted"; }
+    } else if (dir === "sell") {
+      if (e.take_profit != null && cur <= e.take_profit) { level = "past your target"; levelTone = "up"; }
+      else if (e.stop_loss != null && cur >= e.stop_loss) { level = "past your stop"; levelTone = "down"; }
+      else if (e.take_profit != null || e.stop_loss != null) { level = "in range"; levelTone = "muted"; }
+    }
+    return { movePct, moveTone, level, levelTone, base };
+  }
+
+  function alignTag(e) {
+    const lean = (e.ai_lean || "").toLowerCase(), dec = (e.decision || "").toLowerCase();
+    if (!lean || !dec) return "";
+    const aligned =
+      (lean === "buy" && dec === "buy") ||
+      (lean === "sell" && dec === "sell") ||
+      (lean === "hold" && (dec === "watch" || dec === "skip"));
+    return aligned ? `<span class="e-tag">aligned</span>` : `<span class="e-tag">your own call</span>`;
+  }
+
+  function entryCard(e) {
+    const cur = priceMap[e.symbol];
+    const r = rr(e);
+    const st = status(e, cur);
+    const dec = (e.decision || "—").toLowerCase();
+
+    const levels = `
+      <div class="e-levels">
+        <div><span>Logged at</span><span>${money(e.price_at_log)}</span></div>
+        ${e.entry != null ? `<div><span>Entry</span><span>${money(e.entry)}</span></div>` : ""}
+        ${e.stop_loss != null ? `<div><span>Stop</span><span>${money(e.stop_loss)}</span></div>` : ""}
+        ${e.take_profit != null ? `<div><span>Target</span><span>${money(e.take_profit)}</span></div>` : ""}
+        ${r ? `<div><span>Risk:Reward</span><span>${r}</span></div>` : ""}
+      </div>`;
+
+    const ai = e.ai_lean
+      ? `<div class="e-ai">Li-Da leaned <b>${esc(e.ai_lean)}</b>${e.ai_confidence ? " (" + esc(e.ai_confidence) + ")" : ""} · you chose <b>${esc(dec)}</b> ${alignTag(e)}</div>`
+      : "";
+
+    const reason = e.reasoning ? `<div class="e-reason">“${esc(e.reasoning)}”</div>` : "";
+
+    let live = "";
+    if (cur != null) {
+      const movePart = st && st.movePct != null
+        ? `<span class="e-move ${st.moveTone}">${st.movePct >= 0 ? "+" : ""}${st.movePct.toFixed(1)}% since ${e.entry != null ? "entry" : "log"}</span>`
+        : "";
+      const levelPart = st && st.level ? `<span class="e-status ${st.levelTone}">${st.level}</span>` : "";
+      live = `<div class="e-live"><span class="now">now ${money(cur)}</span>${movePart}${levelPart}</div>`;
+    } else {
+      live = `<div class="e-live"><span class="e-status muted">live price unavailable</span></div>`;
+    }
+
+    return `
+      <div class="entry">
+        <div class="e-head">
+          <span class="e-sym">${esc(e.symbol)}</span>
+          <span class="e-badge ${dec}">${esc(dec)}</span>
+          <span class="e-date">${fmtDate(e.created_at)}</span>
+        </div>
+        ${levels}
+        ${ai}
+        ${reason}
+        ${live}
+      </div>`;
+  }
+
+  function renderSummary(rows) {
+    const total = rows.length;
+    const by = { buy: 0, watch: 0, sell: 0, skip: 0 };
+    let withStop = 0;
+    rows.forEach((e) => { if (by[e.decision] != null) by[e.decision]++; if (e.stop_loss != null) withStop++; });
+    const disc = total ? Math.round((withStop / total) * 100) : 0;
+    summaryEl.innerHTML = `
+      <div class="summary">
+        <div class="stat-chip"><div class="n">${total}</div><div class="l">logged calls</div></div>
+        <div class="stat-chip"><div class="n">${by.buy} · ${by.watch} · ${by.sell}</div><div class="l">buy · watch · sell</div></div>
+        <div class="stat-chip"><div class="n">${disc}%</div><div class="l">set an exit</div></div>
+      </div>`;
+  }
+
+  function renderFilter(rows) {
+    const syms = [...new Set(rows.map((r) => r.symbol))].sort();
+    filterEl.innerHTML = `
+      <div class="filter">
+        <label for="symfilter">Filter</label>
+        <select id="symfilter">
+          <option value="">All tickers</option>
+          ${syms.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join("")}
+        </select>
+      </div>`;
+    document.getElementById("symfilter").addEventListener("change", (e) => {
+      const v = e.target.value;
+      const rows2 = v ? allRows.filter((r) => r.symbol === v) : allRows;
+      listEl.innerHTML = rows2.map(entryCard).join("");
+    });
+  }
+
+  async function loadPrices(symbols) {
+    await Promise.all(symbols.map(async (s) => {
+      try {
+        const r = await fetch("/api/market?symbol=" + encodeURIComponent(s));
+        const d = await r.json();
+        if (r.ok && d.price != null) priceMap[s] = d.price;
+      } catch (e) { /* leave unset */ }
+    }));
+  }
+
+  async function init() {
+    try {
+      const r = await fetch("/api/logs");
+      const d = await r.json();
+      if (!r.ok) { listEl.innerHTML = `<div class="error">${esc(d.error || "Couldn't load journal.")}</div>`; return; }
+      allRows = d.rows || [];
+      if (!allRows.length) {
+        listEl.innerHTML = `<div class="empty">No calls logged yet. Pull a read on the desk and log your first decision.</div>`;
+        return;
+      }
+      renderSummary(allRows);
+      renderFilter(allRows);
+      const symbols = [...new Set(allRows.map((r) => r.symbol))];
+      await loadPrices(symbols);
+      listEl.innerHTML = allRows.map(entryCard).join("");
+    } catch (e) {
+      listEl.innerHTML = `<div class="error">Couldn't reach the journal. Try again.</div>`;
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>

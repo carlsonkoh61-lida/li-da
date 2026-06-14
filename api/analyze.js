@@ -1,9 +1,9 @@
 // Vercel serverless function → https://li-da.vercel.app/api/analyze?symbol=AAPL
 // Put this at:  /api/analyze.js   (replaces the previous version)
 //
-// Pulls quote, news, fundamentals, analyst recs, and profile from Finnhub,
-// filters the news to this company, then asks Claude for a grounded read AND
-// a distilled "news take" — so the page shows one judged summary, not a pile.
+// Pulls quote, news, fundamentals, analyst recs, profile from Finnhub, filters
+// the news, then asks Claude for a grounded read, a distilled news take, AND a
+// stress-test that pressure-tests the thesis.
 
 const SYSTEM_PROMPT = `You are the analysis engine for one person's private stock-research tool.
 You are NOT a financial advisor and must never give an order to obey. Your job is decision-support:
@@ -14,13 +14,18 @@ balance-sheet ratios), and the latest analyst recommendation counts.
 
 Rules:
 - Always give a real bear case, weighted equally with the bull case. Never hide the risks.
-- Use concrete numbers from the fundamentals in your points where they matter (e.g. cite the margin,
-  the debt ratio, the 52-week range). NEVER invent a figure that is null or missing.
+- Use concrete numbers from the fundamentals in your points where they matter. NEVER invent a figure
+  that is null or missing.
 - Treat analyst consensus as one input, not gospel.
-- Synthesize the news into "news_take": read ALL the provided headlines and summaries, judge the overall
-  signal, and be honest about quality. If the news is thin, stale, or mostly generic market noise rather
-  than company-specific, say so plainly and set the signal to "quiet" or "mixed". Paraphrase everything in
-  your own words; never quote articles.
+- Synthesize the news into "news_take": read ALL the provided headlines/summaries, judge the overall
+  signal, and be honest about quality. If the news is thin, stale, or mostly generic market noise, say so
+  and set the signal to "quiet" or "mixed". Paraphrase; never quote.
+- Pressure-test the thesis in "stress_test": name the single load-bearing assumption the bull case
+  secretly depends on; the kill switch (the concrete development that would prove this read flat wrong);
+  an honest fragility rating (how much of the whole thesis rests on that one assumption); and a base_rate
+  reality anchor — the grounded reality for this kind of situation (e.g. "most turnarounds fail",
+  "most hype fades"). The base rate is a reality check, NOT a price prediction. Be willing to rate
+  fragility "high" — surfacing a fragile thesis is the entire point of this tool.
 - Your "lean" is one input, not a verdict. Set "confidence" honestly. Most real situations are "low" or
   "medium"; reserve "high" for genuinely clear-cut cases where fundamentals and news clearly align.
 - Keep every point short, plain, and jargon-free. No hype.
@@ -36,8 +41,15 @@ Rules:
   "news_take": {
     "headline": "one short line distilling what the recent news amounts to",
     "signal": "positive" | "negative" | "mixed" | "quiet",
-    "detail": "1-2 plain sentences: what it means for the stock and how much to trust it (flag thin/stale/noisy news)",
+    "detail": "1-2 plain sentences: what it means and how much to trust it",
     "what_matters": ["the item(s) that genuinely matter, paraphrased — empty array if nothing material"]
+  },
+  "stress_test": {
+    "load_bearing": "the single assumption the bull case most depends on, in plain words",
+    "kill_switch": "the concrete development that would prove this read flat wrong",
+    "fragility": "low" | "medium" | "high",
+    "fragility_reason": "one short sentence on why the thesis is that fragile",
+    "base_rate": "the honest base-rate / reality anchor for this kind of situation — a reality check, not a prediction"
   },
   "before_you_act": ["a question or reminder that pushes the reader to make their own decision"]
 }`;
@@ -154,7 +166,7 @@ export default async function handler(req, res) {
       headers: { "content-type": "application/json", "x-api-key": ANTHROPIC, "anthropic-version": "2023-06-01" },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 1400,
+        max_tokens: 1600,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userContent }],
       }),

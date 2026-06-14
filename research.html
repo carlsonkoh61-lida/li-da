@@ -151,6 +151,16 @@
   .analyst .bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; margin-top: 10px; background: rgba(255,255,255,0.06); }
   .analyst .bar i { display: block; height: 100%; }
   .analyst .bar .b { background: var(--up); } .analyst .bar .h { background: var(--muted); } .analyst .bar .s { background: var(--down); }
+  /* ---- versus peers ---- */
+  .peer-take { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .ptag { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(133,118,255,0.5); color: var(--violet-soft); white-space: nowrap; }
+  .peer-take p { font-size: 14px; line-height: 1.5; color: var(--paper); flex: 1; min-width: 200px; }
+  table.peers { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.peers th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  table.peers th:not(:first-child), table.peers td:not(:first-child) { text-align: right; }
+  table.peers td { padding: 9px 0; border-bottom: 1px dotted var(--line); font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; color: var(--paper); }
+  table.peers tr.target td { color: var(--violet-soft); }
+  table.peers tr.target td:first-child { font-weight: 600; }
 
   /* ---- news take ---- */
   .nt-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
@@ -316,6 +326,32 @@
       ? `<div class="figs">${rows.map((r) => `<div class="fig"><span>${esc(r[0])}</span><span>${esc(r[1])}</span></div>`).join("")}</div>`
       : `<p class="empty">No fundamentals available for this ticker.</p>`;
 
+    // versus peers
+    const peers = d.peers || [];
+    const pt = (d.read && d.read.peer_take) || null;
+    let peersHtml = "";
+    if (peers.length > 1) {
+      const prows = peers.map((p) => `
+        <tr class="${p.isTarget ? "target" : ""}">
+          <td>${esc(p.symbol)}</td>
+          <td>${p.pe != null ? num(p.pe) : "—"}</td>
+          <td>${p.margin != null ? pct(p.margin) : "—"}</td>
+        </tr>`).join("");
+      const tag = pt ? `<span class="ptag">${esc(pt.relative || "vs peers")}</span>` : "";
+      const detail = pt ? `<p>${esc(pt.detail || "")}</p>` : "";
+      peersHtml = `
+        <div class="block">
+          <div class="lab">Versus peers</div>
+          <div class="peer-take">${tag}${detail}</div>
+          <table class="peers">
+            <thead><tr><th>Ticker</th><th>P/E</th><th>Margin</th></tr></thead>
+            <tbody>${prows}</tbody>
+          </table>
+        </div>`;
+    } else if (pt && pt.detail) {
+      peersHtml = `<div class="block"><div class="lab">Versus peers</div><p class="empty">${esc(pt.detail)}</p></div>`;
+    }
+
     let analystHtml = "";
     const a = d.analyst;
     if (a) {
@@ -360,7 +396,7 @@
         <details class="sources"><summary>Sources (${news.length})</summary><div class="news">${sourceItems}</div></details>
       </div>`;
 
-    return `<div class="evidence show"><h3>What it read</h3>${figsHtml}${analystHtml}${newsHtml}</div>`;
+    return `<div class="evidence show"><h3>What it read</h3>${figsHtml}${peersHtml}${analystHtml}${newsHtml}</div>`;
   }
 
   function renderMove() {

@@ -1,29 +1,34 @@
 // Vercel serverless function → https://li-da.vercel.app/api/analyze?symbol=AAPL
-// Pulls quote, news, fundamentals, analyst recs, profile, a peer group, AND daily
-// price history (for technicals), then asks Claude for a grounded, trend-aware read.
+// Quote, news, fundamentals, analyst recs, profile, peers, daily price history →
+// technicals + a REAL base-rate (from the stock's own past) → trend-aware, hype-aware read.
 
 const SYSTEM_PROMPT = `You are the analysis engine for one person's private stock-research tool.
 You are NOT a financial advisor and must never give an order to obey. Your job is decision-support:
 lay out both sides honestly so the person makes their own call.
 
 You receive: the latest quote, recent news, basic fundamentals, analyst recommendation counts, a peer group
-(each peer's P/E and margin), and "technicals" computed from the daily chart (trend from moving averages,
-RSI(14) and its state, where price sits vs its 20- and 50-day moving averages, and how far it is off its
-recent high/low).
+(each peer's P/E and margin), "technicals" (trend from moving averages, RSI(14), price vs its 20- and 50-day
+averages, distance off recent high/low), and a "hype" signal computed from the stock's OWN price history —
+whether it is currently running hot (extended above its 50-day average, overbought, or freshly spiked) plus a
+real base_rate: of the times this stock was in a similar state in the past, how often it was LOWER 20 trading
+days later, and the median move.
 
 Rules:
 - Always give a real bear case, weighted equally with the bull case. Never hide the risks.
 - Use concrete numbers from the fundamentals where they matter. NEVER invent a figure that is null.
 - Treat analyst consensus as one input, not gospel.
-- Factor the technicals into the read: note when price is stretched, oversold/overbought, or below/above
-  key moving averages, and let the trend inform your bull/bear points, the "levels", and your confidence.
-  Treat RSI and moving averages as CONTEXT, never as standalone buy/sell signals. If technicals are null, ignore them.
-- Synthesize the news into "news_take": judge the signal and be honest about quality (thin/stale/noisy →
-  "quiet" or "mixed"). Paraphrase; never quote.
-- Pressure-test the thesis in "stress_test": the single load-bearing assumption; the kill switch; an honest
-  fragility rating; and a base_rate reality anchor (a reality check, NOT a prediction). Be willing to rate "high".
-- Compare to peers in "peer_take": where this sits vs peers on valuation (P/E) and quality (margins), set
-  "relative" to premium / discount / in-line / mixed, and explain what the gap implies. If peer data is sparse, say so.
+- Factor technicals in: note when price is stretched, oversold/overbought, below/above key averages. Treat RSI
+  and moving averages as CONTEXT, never standalone buy/sell signals.
+- HYPE HANDLING — this matters most. When hype.hot is true, your bear case and stress_test must bite HARDER:
+  explicitly name the risk of chasing a stretched price, weight the downside, and let confidence reflect that
+  buying into strength means buying high. When hype.hot is false, do NOT manufacture alarm — give a balanced read.
+- BASE RATE — use the REAL number, not generic reasoning, in stress_test.base_rate. If base_rate exists, phrase it
+  with its sample size honestly, e.g. "In the past year this stock was this stretched 11 times and was lower 20
+  days later in 7 (64%) — though that's a thin sample." If base_rate.thin is true or sample is small, explicitly
+  call it suggestive only. If base_rate is null/unprecedented, say there's no comparable history rather than inventing one.
+- Synthesize news into "news_take": judge the signal, be honest about quality (thin/stale/noisy → "quiet"/"mixed"). Paraphrase; never quote.
+- Pressure-test in "stress_test": the load-bearing assumption; the kill switch; an honest fragility rating; and base_rate (the real number per above).
+- Compare to peers in "peer_take": valuation (P/E) and quality (margins); set "relative" to premium/discount/in-line/mixed; if peer data is sparse, say so.
 - Your "lean" is one input, not a verdict. Set "confidence" honestly; reserve "high" for clear-cut cases.
 - Keep every point short, plain, jargon-free. No hype.
 - Return ONLY a JSON object — no markdown, no code fences, no text before or after — in exactly this shape:
@@ -99,6 +104,57 @@ function computeTechnicals(closes, current) {
   };
 }
 
+// Forward-looking base rate from the stock's OWN history.
+function forwardBaseRate(closes, ma50arr, rsiArr, mode, threshold) {
+  const n = closes.length, H = 20;
+  const samples = [];
+  for (let i = 50; i <= n - 1 - H; i++) {
+    if (closes[i] == null) continue;
+    const fwd = ((closes[i + H] - closes[i]) / closes[i]) * 100;
+    if (mode === "ext") {
+      if (ma50arr[i] == null) continue;
+      const ext = ((closes[i] - ma50arr[i]) / ma50arr[i]) * 100;
+      if (ext >= threshold) samples.push(fwd);
+    } else {
+      if (rsiArr[i] != null && rsiArr[i] >= threshold) samples.push(fwd);
+    }
+  }
+  if (!samples.length) return null;
+  const neg = samples.filter((x) => x < 0).length;
+  const sorted = samples.slice().sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  return {
+    sample: samples.length,
+    pct_lower_20d: Math.round((neg / samples.length) * 100),
+    median_fwd_20d: Number(median.toFixed(1)),
+    thin: samples.length < 6,
+  };
+}
+function computeHype(closes, tech) {
+  if (!tech || !Array.isArray(closes) || closes.length < 70) return { hot: false };
+  const n = closes.length;
+  const ma50arr = sma(closes, 50), rsiArr = rsi14(closes);
+  const ext = tech.priceVsMA50, rsi = tech.rsi;
+  const last5 = n >= 6 ? ((closes[n - 1] - closes[n - 6]) / closes[n - 6]) * 100 : null;
+  const extended = ext != null && ext >= 8;
+  const overbought = rsi != null && rsi >= 68;
+  const spiked = last5 != null && last5 >= 12;
+  if (!extended && !overbought && !spiked) return { hot: false };
+
+  let base = null;
+  if (extended) {
+    const thr = Math.max(8, ext);
+    base = forwardBaseRate(closes, ma50arr, rsiArr, "ext", thr);
+    if (base) base.condition = `at least ${Math.round(thr)}% above its 50-day average (where it sits now)`;
+    else base = { sample: 0, unprecedented: true, condition: `this far above its 50-day average` };
+  } else if (overbought) {
+    base = forwardBaseRate(closes, ma50arr, rsiArr, "rsi", 70);
+    if (base) base.condition = `overbought (RSI ≥ 70)`;
+    else base = { sample: 0, unprecedented: true, condition: `this overbought` };
+  }
+  return { hot: true, extended, overbought, spiked, last5d: last5 != null ? Number(last5.toFixed(1)) : null, base_rate: base };
+}
+
 export default async function handler(req, res) {
   const symbol = (req.query.symbol || "").toUpperCase().trim();
   if (!symbol) return res.status(400).json({ error: "Add a symbol, e.g. /api/analyze?symbol=AAPL" });
@@ -116,7 +172,7 @@ export default async function handler(req, res) {
     const fmt = (d) => d.toISOString().slice(0, 10);
     const pick = (v) => (typeof v === "number" ? v : null);
 
-    const tdUrl = TD ? `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1day&outputsize=80&apikey=${TD}` : null;
+    const tdUrl = TD ? `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1day&outputsize=300&apikey=${TD}` : null;
 
     const [quoteRes, newsRes, metricRes, recRes, profRes, peersRes, tdRes] = await Promise.all([
       fetch(`${base}/quote?symbol=${symbol}&token=${FINNHUB}`),
@@ -140,7 +196,6 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: `No data for "${symbol}". Check the ticker.` });
     }
 
-    // news filter
     const terms = nameTerms(profile && profile.name, symbol);
     const onTopic = (n) => { const blob = (`${n.headline || ""} ${n.summary || ""}`).toLowerCase(); return terms.some((t) => blob.includes(t)); };
     const allNews = Array.isArray(newsRaw) ? newsRaw : [];
@@ -148,7 +203,6 @@ export default async function handler(req, res) {
     const chosen = (filtered.length ? filtered : allNews).slice(0, 8);
     const news = chosen.map((n) => ({ headline: n.headline, summary: (n.summary || "").slice(0, 300), source: n.source || "", url: n.url || "", datetime: n.datetime || null }));
 
-    // fundamentals
     const m = (metricRaw && metricRaw.metric) || {};
     const figures = {
       marketCap: pick(m.marketCapitalization), pe: pick(m.peTTM != null ? m.peTTM : m.peNormalizedAnnual),
@@ -158,21 +212,19 @@ export default async function handler(req, res) {
       eps: pick(m.epsTTM), beta: pick(m.beta),
     };
 
-    // analyst
     const rr = Array.isArray(recRaw) && recRaw.length ? recRaw[0] : null;
     const analyst = rr ? { strongBuy: rr.strongBuy || 0, buy: rr.buy || 0, hold: rr.hold || 0, sell: rr.sell || 0, strongSell: rr.strongSell || 0, period: rr.period || "" } : null;
 
-    // peers
     let peerSymbols = Array.isArray(peersRaw) ? peersRaw.filter((s) => s && s.toUpperCase() !== symbol).slice(0, 4) : [];
     const peerMetrics = await Promise.all(peerSymbols.map((s) => fetch(`${base}/stock/metric?symbol=${s}&metric=all&token=${FINNHUB}`).then((r) => r.json()).catch(() => null)));
     const peerRows = peerSymbols.map((s, i) => { const mm = (peerMetrics[i] && peerMetrics[i].metric) || {}; return { symbol: s, pe: pick(mm.peTTM != null ? mm.peTTM : mm.peNormalizedAnnual), margin: pick(mm.netProfitMarginTTM) }; });
     const peers = [{ symbol, pe: figures.pe, margin: figures.profitMargin, isTarget: true }, ...peerRows];
 
-    // technicals from daily closes
-    let technicals = null;
+    let technicals = null, hype = { hot: false }, closes = null;
     if (tdData && Array.isArray(tdData.values)) {
-      const closes = tdData.values.map((v) => Number(v.close)).filter((x) => !isNaN(x)).reverse();
+      closes = tdData.values.map((v) => Number(v.close)).filter((x) => !isNaN(x)).reverse();
       technicals = computeTechnicals(closes, quote.c);
+      hype = computeHype(closes, technicals);
     }
 
     const factPack = {
@@ -180,7 +232,7 @@ export default async function handler(req, res) {
       price: quote.c, change: quote.d, percent: quote.dp, open: quote.o, prevClose: quote.pc, dayHigh: quote.h, dayLow: quote.l,
       fundamentals: figures, analyst,
       peers: peers.map((p) => ({ symbol: p.symbol, pe: p.pe, margin: p.margin })),
-      technicals,
+      technicals, hype,
       recent_news: news.map((n) => ({ headline: n.headline, summary: n.summary })),
     };
 
@@ -201,7 +253,7 @@ export default async function handler(req, res) {
     let read;
     try { read = JSON.parse(text); } catch (e) { return res.status(502).json({ error: "Claude's reply wasn't in the expected format. Try again." }); }
 
-    return res.status(200).json({ symbol, read, news, figures, analyst, peers, technicals });
+    return res.status(200).json({ symbol, read, news, figures, analyst, peers, technicals, hype });
   } catch (err) {
     return res.status(500).json({ error: "Something went wrong running the read. Try again in a moment." });
   }

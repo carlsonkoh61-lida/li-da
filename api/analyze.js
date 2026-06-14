@@ -11,7 +11,7 @@ You receive: the latest quote, recent news, basic fundamentals, analyst recommen
 averages, distance off recent high/low), and a "hype" signal computed from the stock's OWN price history —
 whether it is currently running hot (extended above its 50-day average, overbought, or freshly spiked) plus a
 real base_rate: of the times this stock was in a similar state in the past, how often it was LOWER 20 trading
-days later, and the median move.
+days later, and the median move. You also receive "regime": the stock's current market regime (an overall label, its volatility state with the typical daily move, and its volume behavior).
 
 Rules:
 - Always give a real bear case, weighted equally with the bull case. Never hide the risks.
@@ -19,6 +19,7 @@ Rules:
 - Treat analyst consensus as one input, not gospel.
 - Factor technicals in: note when price is stretched, oversold/overbought, below/above key averages. Treat RSI
   and moving averages as CONTEXT, never standalone buy/sell signals.
+- REGIME: factor the regime into your RISK framing. In high-volatility or choppy regimes, note that stops need more room, position size should be smaller, and whipsaws / failed breakouts are likelier; in calm trends, note conditions are more orderly. Reflect this in "levels", "stress_test", and "before_you_act". Describe how careful to be — do NOT prescribe a specific trading strategy to deploy. Decision-support, never a trade recommendation.
 - HYPE HANDLING — this matters most. When hype.hot is true, your bear case and stress_test must bite HARDER:
   explicitly name the risk of chasing a stretched price, weight the downside, and let confidence reflect that
   buying into strength means buying high. When hype.hot is false, do NOT manufacture alarm — give a balanced read.
@@ -155,6 +156,39 @@ function computeHype(closes, tech) {
   return { hot: true, extended, overbought, spiked, last5d: last5 != null ? Number(last5.toFixed(1)) : null, base_rate: base };
 }
 
+function stdev(a) {
+  if (a.length < 2) return 0;
+  const m = a.reduce((x, y) => x + y, 0) / a.length;
+  const v = a.reduce((x, y) => x + (y - m) * (y - m), 0) / (a.length - 1);
+  return Math.sqrt(v);
+}
+function computeRegime(closes, volumes, tech) {
+  if (!Array.isArray(closes) || closes.length < 30 || !tech) return null;
+  const n = closes.length;
+  const rets = [];
+  for (let i = 1; i < n; i++) rets.push((closes[i] - closes[i - 1]) / closes[i - 1]);
+  const recent = rets.slice(-20), typical = rets.slice(-Math.min(rets.length, 120));
+  const rv = stdev(recent), tv = stdev(typical);
+  const ratio = tv ? rv / tv : 1;
+  let volState = "normal";
+  if (ratio < 0.8) volState = "calm"; else if (ratio < 1.25) volState = "normal"; else if (ratio < 1.8) volState = "elevated"; else volState = "high";
+  const avgDailyMove = recent.length ? (recent.reduce((s, x) => s + Math.abs(x), 0) / recent.length) * 100 : null;
+  let volumeState = "steady", vr = 1;
+  if (volumes && volumes.length >= 20) {
+    const recV = volumes.slice(-10), baseV = volumes.slice(-Math.min(volumes.length, 60));
+    const rm = recV.reduce((s, x) => s + x, 0) / recV.length, bm = baseV.reduce((s, x) => s + x, 0) / baseV.length;
+    vr = bm ? rm / bm : 1;
+    if (vr > 1.3) volumeState = "rising"; else if (vr < 0.7) volumeState = "fading"; else volumeState = "steady";
+  }
+  const trend = tech.trend, hot = volState === "high" || volState === "elevated";
+  let label;
+  if (trend === "up") label = volState === "high" ? "volatile uptrend" : (volState === "elevated" ? "uptrend, volatility rising" : "steady uptrend");
+  else if (trend === "down") label = volState === "high" ? "volatile selloff" : (volState === "elevated" ? "downtrend, volatility rising" : "steady downtrend");
+  else label = hot ? "choppy, indecisive" : "quiet range";
+  const round = (x, d = 1) => (x == null ? null : Number(x.toFixed(d)));
+  return { label, trend, volatility_state: volState, avg_daily_move_pct: round(avgDailyMove, 1), vol_vs_typical: round(ratio, 2), volume_state: volumeState, volume_vs_avg: round(vr, 2) };
+}
+
 export default async function handler(req, res) {
   const symbol = (req.query.symbol || "").toUpperCase().trim();
   if (!symbol) return res.status(400).json({ error: "Add a symbol, e.g. /api/analyze?symbol=AAPL" });
@@ -220,11 +254,14 @@ export default async function handler(req, res) {
     const peerRows = peerSymbols.map((s, i) => { const mm = (peerMetrics[i] && peerMetrics[i].metric) || {}; return { symbol: s, pe: pick(mm.peTTM != null ? mm.peTTM : mm.peNormalizedAnnual), margin: pick(mm.netProfitMarginTTM) }; });
     const peers = [{ symbol, pe: figures.pe, margin: figures.profitMargin, isTarget: true }, ...peerRows];
 
-    let technicals = null, hype = { hot: false }, closes = null;
+    let technicals = null, hype = { hot: false }, regime = null, closes = null;
     if (tdData && Array.isArray(tdData.values)) {
-      closes = tdData.values.map((v) => Number(v.close)).filter((x) => !isNaN(x)).reverse();
+      const bars = tdData.values.map((v) => ({ close: Number(v.close), volume: Number(v.volume) || 0 })).filter((b) => !isNaN(b.close)).reverse();
+      closes = bars.map((b) => b.close);
+      const volumes = bars.map((b) => b.volume);
       technicals = computeTechnicals(closes, quote.c);
       hype = computeHype(closes, technicals);
+      regime = computeRegime(closes, volumes, technicals);
     }
 
     const factPack = {
@@ -232,7 +269,7 @@ export default async function handler(req, res) {
       price: quote.c, change: quote.d, percent: quote.dp, open: quote.o, prevClose: quote.pc, dayHigh: quote.h, dayLow: quote.l,
       fundamentals: figures, analyst,
       peers: peers.map((p) => ({ symbol: p.symbol, pe: p.pe, margin: p.margin })),
-      technicals, hype,
+      technicals, hype, regime,
       recent_news: news.map((n) => ({ headline: n.headline, summary: n.summary })),
     };
 
@@ -253,7 +290,7 @@ export default async function handler(req, res) {
     let read;
     try { read = JSON.parse(text); } catch (e) { return res.status(502).json({ error: "Claude's reply wasn't in the expected format. Try again." }); }
 
-    return res.status(200).json({ symbol, read, news, figures, analyst, peers, technicals, hype });
+    return res.status(200).json({ symbol, read, news, figures, analyst, peers, technicals, hype, regime });
   } catch (err) {
     return res.status(500).json({ error: "Something went wrong running the read. Try again in a moment." });
   }

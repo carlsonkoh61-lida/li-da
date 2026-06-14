@@ -221,6 +221,7 @@
   .tchip.up { color: var(--up); border-color: rgba(74,222,154,0.5); }
   .tchip.down { color: var(--down); border-color: rgba(255,107,107,0.5); }
   .tchip.sideways { color: var(--violet-soft); border-color: rgba(133,118,255,0.4); }
+  .tchip.hot { color: #F5B870; border-color: rgba(245,184,112,0.55); }
   .tstat { color: var(--muted); font-size: 13px; }
   .tstat b { font-family: "IBM Plex Mono", monospace; color: var(--paper); font-weight: 500; }
   .tstat b.up { color: var(--up); } .tstat b.down { color: var(--down); }
@@ -403,11 +404,13 @@
       const ma50txt = t.priceVsMA50 != null ? `<span class="tstat">vs MA50 <b class="${ma50dir}">${t.priceVsMA50 >= 0 ? "+" : ""}${t.priceVsMA50}%</b></span>` : "";
       const rsiTxt = t.rsi != null ? `<span class="tstat">RSI <b>${t.rsi}</b> · ${esc(t.rsiState)}</span>` : "";
       const offHi = t.pctOffHigh != null ? `<span class="tstat">off high <b>${t.pctOffHigh}%</b></span>` : "";
+      const hy = d.hype || null;
+      const hotChip = (hy && hy.hot) ? `<span class="tchip hot">running hot</span>` : "";
       techHtml = `
         <div class="block">
           <div class="lab">Technicals</div>
           <div class="tech-row">
-            <span class="tchip ${esc(t.trend)}">${esc(t.trend)}</span>
+            <span class="tchip ${esc(t.trend)}">${esc(t.trend)}</span>${hotChip}
             ${rsiTxt}${ma50txt}${offHi}
           </div>
         </div>`;

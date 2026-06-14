@@ -208,6 +208,10 @@
   .curlbl { fill: var(--violet-soft); font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 600; }
   .panlbl { fill: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; }
   .ma20 { fill: var(--violet-soft); } .ma50 { fill: #7FB3D5; }
+  .lvl { stroke-width: 1; stroke-dasharray: 4 3; opacity: 0.85; }
+  .lvl.entry { stroke: var(--violet-soft); } .lvl.stop { stroke: var(--down); } .lvl.target { stroke: var(--up); }
+  .lvllbl { font-family: "IBM Plex Mono", monospace; font-size: 9px; }
+  .lvllbl.entry { fill: var(--violet-soft); } .lvllbl.stop { fill: var(--down); } .lvllbl.target { fill: var(--up); }
   .chart-loading { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 14px; padding: 40px 0; text-align: center; }
   .chart-empty { color: var(--muted); font-size: 14px; padding: 30px 0; text-align: center; }
 
@@ -276,6 +280,7 @@
   let chartSym = null;
   let chartRange = "3m";
   let chartGeo = null;
+  let chartLogs = [];
 
   function money(n) { return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
@@ -599,6 +604,10 @@
     vis.forEach((p) => { pMin = Math.min(pMin, p.low); pMax = Math.max(pMax, p.high); });
     for (let k = 0; k < N; k++) { const fi = start + k;[s20[fi], s50[fi]].forEach((v) => { if (v != null) { pMin = Math.min(pMin, v); pMax = Math.max(pMax, v); } }); }
     if (current != null) { pMin = Math.min(pMin, current); pMax = Math.max(pMax, current); }
+    if (chartLogs && chartLogs.length) {
+      const rc = chartLogs[0];
+      [rc.entry, rc.stop_loss, rc.take_profit].forEach((v) => { if (v != null) { pMin = Math.min(pMin, Number(v)); pMax = Math.max(pMax, Number(v)); } });
+    }
     const pPad = ((pMax - pMin) || 1) * 0.06; pMin -= pPad; pMax += pPad;
     const pY = (v) => priceTop + (1 - (v - pMin) / (pMax - pMin)) * priceH;
 
@@ -654,6 +663,44 @@
     const labels = `<text class="panlbl" x="${padL}" y="${volTop + 8}">Volume</text><text class="panlbl" x="${padL}" y="${rsiTop + 8}">RSI 14</text>`;
     const legend = `<text class="panlbl ma20" x="${padL}" y="${priceTop - 8}">— MA20</text><text class="panlbl ma50" x="${padL + 54}" y="${priceTop - 8}">— MA50</text>`;
 
+    // --- your logged calls overlaid on the candles ---
+    let overlay = "";
+    if (chartLogs && chartLogs.length) {
+      const lvl = (val, cls, label) => {
+        if (val == null) return "";
+        const v = Number(val);
+        if (v < pMin || v > pMax) return "";
+        const y = pY(v);
+        return `<line class="lvl ${cls}" x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}"/><text class="lvllbl ${cls}" x="${(padL + 2)}" y="${(y - 3).toFixed(1)}">${label} ${v.toFixed(2)}</text>`;
+      };
+      const rc = chartLogs[0];
+      overlay += lvl(rc.entry, "entry", "entry");
+      overlay += lvl(rc.stop_loss, "stop", "stop");
+      overlay += lvl(rc.take_profit, "target", "target");
+
+      const idxByDate = (d) => {
+        const ld = String(d).slice(0, 10);
+        if (ld < vis[0].date) return -1;
+        let idx = -1;
+        for (let k = 0; k < N; k++) { if (vis[k].date <= ld) idx = k; else break; }
+        return idx;
+      };
+      chartLogs.forEach((lg) => {
+        const k = idxByDate(lg.created_at);
+        if (k < 0) return;
+        const x = xC(k), dec = (lg.decision || "").toLowerCase();
+        if (dec === "buy") {
+          const y = pY(vis[k].low) + 11;
+          overlay += `<path d="M ${x.toFixed(1)} ${(y - 7).toFixed(1)} l 4 7 l -8 0 z" fill="var(--up)"/>`;
+        } else if (dec === "sell") {
+          const y = pY(vis[k].high) - 11;
+          overlay += `<path d="M ${x.toFixed(1)} ${(y + 7).toFixed(1)} l 4 -7 l -8 0 z" fill="var(--down)"/>`;
+        } else {
+          overlay += `<circle cx="${x.toFixed(1)}" cy="${pY(vis[k].close).toFixed(1)}" r="3" fill="var(--violet-soft)"/>`;
+        }
+      });
+    }
+
     chartGeo = { vis, N, start, padL, slot, W };
 
     const svg = `
@@ -665,7 +712,7 @@
         <path d="${ma50}" fill="none" stroke="#7FB3D5" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
         ${rsiRef}
         <path d="${rsiPath}" fill="none" stroke="var(--violet-2)" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
-        ${curMark}${labels}${legend}${dates}
+        ${curMark}${overlay}${labels}${legend}${dates}
         <line id="cross-v" class="crossv" x1="0" y1="${priceTop}" x2="0" y2="${rsiBot}" style="display:none"/>
       </svg>`;
     return svg;
@@ -717,7 +764,15 @@
     }
   }
 
-  function getChart(sym) { chartSym = sym; loadChart(sym, chartRange); }
+  async function getChart(sym) {
+    chartSym = sym; chartLogs = [];
+    try {
+      const r = await fetch("/api/logs?symbol=" + encodeURIComponent(sym));
+      const d = await r.json();
+      if (r.ok && Array.isArray(d.rows)) chartLogs = d.rows;
+    } catch (e) { chartLogs = []; }
+    loadChart(sym, chartRange);
+  }
 
   async function getAnalysis(sym) {
     const box = document.createElement("div");

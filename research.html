@@ -186,6 +186,23 @@
   .news .src { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 2px; }
   .empty { color: var(--muted); font-size: 14px; }
 
+  /* ---- price chart ---- */
+  .chart-card { margin-top: 16px; background: var(--panel); backdrop-filter: blur(16px) saturate(125%); -webkit-backdrop-filter: blur(16px) saturate(125%); border: 1px solid var(--line); border-radius: 18px; padding: 26px; position: relative; box-shadow: 0 12px 44px -14px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05); transition: transform 0.25s ease, border-color 0.25s ease; }
+  .chart-card:hover { transform: translateY(-2px); border-color: rgba(133,118,255,0.22); }
+  .chart-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .chart-pct { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .chart-pct.up { color: var(--up); } .chart-pct.down { color: var(--down); }
+  .chart-plot { position: relative; }
+  .chart-svg { width: 100%; height: auto; display: block; overflow: visible; cursor: crosshair; }
+  .cur-dot { fill: var(--violet-2); }
+  .cur-halo { fill: var(--violet); opacity: 0.25; }
+  .cx { stroke: rgba(255,255,255,0.2); stroke-width: 1; }
+  .cxd { fill: var(--violet-soft); }
+  .chart-tip { position: absolute; pointer-events: none; background: rgba(11,13,20,0.92); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--paper); transform: translate(-50%, -135%); white-space: nowrap; display: none; z-index: 5; }
+  .chart-dates { display: flex; justify-content: space-between; margin-top: 8px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); }
+  .chart-loading { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 14px; padding: 30px 0; text-align: center; }
+  .chart-empty { color: var(--muted); font-size: 14px; }
+
   /* ---- your move ---- */
   .movesub { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 18px; }
   .seg { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
@@ -238,6 +255,7 @@
   const btn = document.getElementById("go");
   const out = document.getElementById("out");
   let ctx = null;
+  let chartState = null;
 
   function money(n) { return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
@@ -486,6 +504,104 @@
     document.getElementById("logbtn").addEventListener("click", logDecision);
   }
 
+  function fmtD(d) {
+    try { return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" }); }
+    catch (e) { return d; }
+  }
+
+  function renderChart(points, current) {
+    const W = 600, H = 200, padL = 8, padR = 8, padT = 16, padB = 22;
+    const n = points.length;
+    if (!n) return `<div class="card-eyebrow">Price trend</div><div class="chart-empty">No price history available.</div>`;
+    const closes = points.map((p) => p.close);
+    let min = Math.min(...closes), max = Math.max(...closes);
+    if (current != null) { min = Math.min(min, current); max = Math.max(max, current); }
+    const pad = ((max - min) || 1) * 0.08;
+    const yMin = min - pad, yMax = max + pad;
+    const X = (i) => padL + (i / (n - 1)) * (W - padL - padR);
+    const Y = (v) => padT + (1 - (v - yMin) / (yMax - yMin)) * (H - padT - padB);
+    const lastClose = current != null ? current : closes[n - 1];
+    const line = points.map((p, i) => `${i === 0 ? "M" : "L"} ${X(i).toFixed(1)} ${Y(p.close).toFixed(1)}`).join(" ");
+    const area = `${line} L ${X(n - 1).toFixed(1)} ${H - padB} L ${X(0).toFixed(1)} ${H - padB} Z`;
+    const first = closes[0];
+    const periodPct = first ? ((lastClose - first) / first) * 100 : 0;
+    const up = periodPct >= 0;
+    chartState = { points, n, yMin, yMax, W, H, padL, padR, padT, padB };
+    const cx = X(n - 1), cy = Y(lastClose);
+    return `
+      <div class="chart-head">
+        <span class="card-eyebrow" style="margin:0">Price trend</span>
+        <span class="chart-pct ${up ? "up" : "down"}">${up ? "+" : ""}${periodPct.toFixed(1)}% over period</span>
+      </div>
+      <div class="chart-plot">
+        <svg viewBox="0 0 ${W} ${H}" class="chart-svg">
+          <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--violet)" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="var(--violet)" stop-opacity="0"/>
+          </linearGradient></defs>
+          <path d="${area}" fill="url(#cg)"/>
+          <path d="${line}" fill="none" stroke="var(--violet-2)" stroke-width="1.6" vector-effect="non-scaling-stroke"/>
+          <line id="cx-line" class="cx" x1="0" y1="${padT}" x2="0" y2="${H - padB}" style="display:none"/>
+          <circle id="cx-dot" class="cxd" r="3.5" style="display:none"/>
+          <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="6" class="cur-halo"/>
+          <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.2" class="cur-dot"/>
+        </svg>
+        <div class="chart-tip" id="chart-tip"></div>
+      </div>
+      <div class="chart-dates"><span>${esc(fmtD(points[0].date))}</span><span>${esc(fmtD(points[n - 1].date))} · live</span></div>`;
+  }
+
+  function wireChart() {
+    const card = document.getElementById("chartcard");
+    if (!card || !chartState) return;
+    const svg = card.querySelector("svg");
+    const line = card.querySelector("#cx-line");
+    const dot = card.querySelector("#cx-dot");
+    const tip = card.querySelector("#chart-tip");
+    if (!svg) return;
+    const cs = chartState;
+    const X = (i) => cs.padL + (i / (cs.n - 1)) * (cs.W - cs.padL - cs.padR);
+    const Y = (v) => cs.padT + (1 - (v - cs.yMin) / (cs.yMax - cs.yMin)) * (cs.H - cs.padT - cs.padB);
+    function move(ev) {
+      const rect = svg.getBoundingClientRect();
+      const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      let i = Math.round(((clientX - rect.left) / rect.width) * (cs.n - 1));
+      i = Math.max(0, Math.min(cs.n - 1, i));
+      const p = cs.points[i];
+      const px = X(i), py = Y(p.close);
+      line.setAttribute("x1", px); line.setAttribute("x2", px); line.style.display = "";
+      dot.setAttribute("cx", px); dot.setAttribute("cy", py); dot.style.display = "";
+      tip.style.display = "block";
+      tip.style.left = (px / cs.W) * rect.width + "px";
+      tip.style.top = (py / cs.H) * rect.height + "px";
+      tip.innerHTML = `${esc(fmtD(p.date))} · $${p.close.toFixed(2)}`;
+      if (ev.cancelable) ev.preventDefault();
+    }
+    function leave() { line.style.display = "none"; dot.style.display = "none"; tip.style.display = "none"; }
+    svg.addEventListener("mousemove", move);
+    svg.addEventListener("mouseleave", leave);
+    svg.addEventListener("touchstart", move, { passive: false });
+    svg.addEventListener("touchmove", move, { passive: false });
+    svg.addEventListener("touchend", leave);
+  }
+
+  async function getChart(sym, current) {
+    const card = document.getElementById("chartcard");
+    if (!card) return;
+    try {
+      const r = await fetch("/api/chart?symbol=" + encodeURIComponent(sym));
+      const d = await r.json();
+      if (!r.ok || !d.points || !d.points.length) {
+        card.innerHTML = `<div class="card-eyebrow">Price trend</div><div class="chart-empty">${esc((d && d.error) || "No price history for this ticker.")}</div>`;
+        return;
+      }
+      card.innerHTML = renderChart(d.points, current);
+      wireChart();
+    } catch (e) {
+      card.innerHTML = `<div class="card-eyebrow">Price trend</div><div class="chart-empty">Couldn't load the chart.</div>`;
+    }
+  }
+
   async function getAnalysis(sym) {
     const box = document.createElement("div");
     box.className = "read thinking";
@@ -520,6 +636,8 @@
       if (!res.ok) { out.innerHTML = `<p class="error">${esc(d.error || "Something went wrong.")}</p>`; return; }
       ctx = { symbol: sym, price: d.price, read: null };
       out.innerHTML = priceCard(d);
+      out.insertAdjacentHTML("beforeend", '<div class="chart-card show" id="chartcard"><div class="card-eyebrow">Price trend</div><div class="chart-loading">loading chart…</div></div>');
+      getChart(sym, d.price);
       getAnalysis(sym);
     } catch (e) {
       out.innerHTML = `<p class="error">Couldn't reach the data server. Try again in a moment.</p>`;

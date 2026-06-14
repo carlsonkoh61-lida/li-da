@@ -79,6 +79,33 @@
   .empty, .error { color: var(--muted); font-size: 15px; text-align: center; padding: 40px 0; }
   .error { color: var(--down); }
   .loading { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 14px; text-align: center; padding: 40px 0; }
+  .coach-card { background: var(--panel); backdrop-filter: blur(16px) saturate(125%); border: 1px solid rgba(133,118,255,0.22); border-radius: 16px; padding: 22px; margin-bottom: 20px; box-shadow: 0 12px 44px -14px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05); }
+  .coach-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+  .coach-title { font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 18px; }
+  .coach-sub { color: var(--muted); font-size: 13px; margin-top: 3px; line-height: 1.4; max-width: 360px; }
+  .coach-btn { background: rgba(133,118,255,0.16); border: 1px solid var(--violet); color: var(--violet-soft); border-radius: 10px; padding: 9px 16px; font-family: "IBM Plex Mono", monospace; font-size: 13px; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+  .coach-btn:hover:not(:disabled) { background: rgba(133,118,255,0.28); }
+  .coach-btn:disabled { opacity: 0.6; cursor: default; }
+  .coach-loading { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 13px; padding: 18px 0; }
+  .coach-err { color: var(--down); font-size: 14px; padding: 14px 0; }
+  .coach-headline { font-family: "Space Grotesk", sans-serif; font-size: 17px; line-height: 1.4; margin: 18px 0 8px; color: var(--paper); }
+  .coach-note { color: var(--muted); font-size: 13px; line-height: 1.5; margin-bottom: 16px; font-style: italic; }
+  .coach-sec { margin-top: 16px; }
+  .coach-lab { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .coach-lab.up { color: var(--up); } .coach-lab.down { color: var(--down); }
+  .coach-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .coach-list li { font-size: 14px; line-height: 1.5; padding-left: 16px; position: relative; }
+  .coach-list li::before { content: "—"; position: absolute; left: 0; color: var(--muted); }
+  .coach-list.up li::before { color: var(--up); } .coach-list.down li::before { color: var(--down); }
+  .pat { padding: 10px 0; border-top: 1px solid var(--line); }
+  .pat:first-of-type { border-top: none; }
+  .pat-top { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .pat-ev { color: var(--muted); font-size: 13px; line-height: 1.5; margin-top: 4px; }
+  .conf { font-family: "IBM Plex Mono", monospace; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .conf.emerging { color: var(--violet-soft); border-color: rgba(133,118,255,0.4); }
+  .conf.clear { color: var(--up); border-color: rgba(74,222,154,0.5); }
+  .coach-one { margin-top: 18px; padding: 14px 16px; background: rgba(133,118,255,0.1); border: 1px solid rgba(133,118,255,0.3); border-radius: 12px; font-size: 14px; line-height: 1.5; }
+  .coach-one span { display: block; font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--violet-soft); margin-bottom: 5px; }
   .foot { margin-top: 40px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 20px; line-height: 1.55; }
 </style>
 </head>
@@ -92,6 +119,7 @@
     <p class="sub">Every call you logged, walked forward through real price history — did it hit your stop or your target first? Your honest track record.</p>
 
     <div id="summary"></div>
+    <div id="coach"></div>
     <div id="filterbar"></div>
     <div id="list"><div class="loading">Loading your journal…</div></div>
 
@@ -102,6 +130,7 @@
   const listEl = document.getElementById("list");
   const summaryEl = document.getElementById("summary");
   const filterEl = document.getElementById("filterbar");
+  const coachEl = document.getElementById("coach");
   let allRows = [];
   let priceMap = {};
   let barsMap = {};
@@ -319,6 +348,90 @@
     }));
   }
 
+  function buildCoachPack() {
+    const calls = allRows.map((e) => {
+      const g = gradeMap[keyOf(e)] || {};
+      const lean = (e.ai_lean || "").toLowerCase(), dec = (e.decision || "").toLowerCase();
+      const aligned = (lean === "buy" && dec === "buy") || (lean === "sell" && dec === "sell") || (lean === "hold" && (dec === "watch" || dec === "skip"));
+      const haveLevels = e.entry != null && e.stop_loss != null && e.take_profit != null;
+      const risk = haveLevels ? Math.abs(Number(e.entry) - Number(e.stop_loss)) : 0;
+      const rrNum = risk ? Number((Math.abs(Number(e.take_profit) - Number(e.entry)) / risk).toFixed(1)) : null;
+      return {
+        symbol: e.symbol, decision: dec || null, ai_lean: lean || null,
+        overrode_lida: e.ai_lean ? !aligned : null,
+        entry: e.entry != null ? Number(e.entry) : null, stop: e.stop_loss != null ? Number(e.stop_loss) : null, target: e.take_profit != null ? Number(e.take_profit) : null,
+        risk_reward: rrNum, reasoning: e.reasoning ? String(e.reasoning).slice(0, 240) : null,
+        logged: String(e.created_at).slice(0, 10),
+        outcome: g.status || "unknown", result_r: g.r != null ? Number(g.r.toFixed(2)) : null, outcome_date: g.date || null,
+      };
+    });
+    let wins = 0, losses = 0, openN = 0, ungraded = 0, withStop = 0, rsum = 0;
+    allRows.forEach((e) => {
+      const g = gradeMap[keyOf(e)];
+      if (e.stop_loss != null) withStop++;
+      if (!g) return;
+      if (g.status === "win") { wins++; rsum += g.r; }
+      else if (g.status === "loss") { losses++; rsum -= 1; }
+      else if (g.status === "open") openN++;
+      else if (g.status === "ungraded") ungraded++;
+    });
+    const closed = wins + losses;
+    const summary = {
+      total: allRows.length, closed, wins, losses, open: openN, ungraded,
+      exit_set_pct: allRows.length ? Math.round((withStop / allRows.length) * 100) : 0,
+      win_rate_pct: closed ? Math.round((wins / closed) * 100) : null,
+      avg_result_r: closed ? Number((rsum / closed).toFixed(2)) : null,
+    };
+    return { summary, calls };
+  }
+
+  function renderCoach(c, out) {
+    if (!c) { out.innerHTML = `<div class="coach-err">No read returned.</div>`; return; }
+    const confChip = (cf) => `<span class="conf ${esc(cf)}">${esc(cf)}</span>`;
+    const strengths = (c.strengths || []).map((x) => `<li>${esc(x)}</li>`).join("");
+    const watch = (c.watch_outs || []).map((x) => `<li>${esc(x)}</li>`).join("");
+    const pats = (c.patterns || []).map((p) => `<div class="pat"><div class="pat-top">${esc(p.pattern)} ${p.confidence ? confChip(p.confidence) : ""}</div>${p.evidence ? `<div class="pat-ev">${esc(p.evidence)}</div>` : ""}</div>`).join("");
+    out.innerHTML = `
+      ${c.headline ? `<p class="coach-headline">${esc(c.headline)}</p>` : ""}
+      ${c.data_note ? `<p class="coach-note">${esc(c.data_note)}</p>` : ""}
+      ${strengths ? `<div class="coach-sec"><div class="coach-lab up">What you're doing well</div><ul class="coach-list up">${strengths}</ul></div>` : ""}
+      ${watch ? `<div class="coach-sec"><div class="coach-lab down">Watch-outs</div><ul class="coach-list down">${watch}</ul></div>` : ""}
+      ${pats ? `<div class="coach-sec"><div class="coach-lab">Patterns</div>${pats}</div>` : ""}
+      ${c.one_thing ? `<div class="coach-one"><span>Focus next</span>${esc(c.one_thing)}</div>` : ""}`;
+  }
+
+  async function requestCoach() {
+    const out = document.getElementById("coachOut");
+    const btn = document.getElementById("coachBtn");
+    if (btn) { btn.disabled = true; btn.textContent = "Reading your calls…"; }
+    out.innerHTML = `<div class="coach-loading">Li-Da is reviewing how you decide…</div>`;
+    try {
+      const pack = buildCoachPack();
+      const r = await fetch("/api/coach", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(pack) });
+      const d = await r.json();
+      if (!r.ok) out.innerHTML = `<div class="coach-err">${esc(d.error || "Couldn't get a read.")}</div>`;
+      else renderCoach(d.coaching, out);
+    } catch (e) {
+      out.innerHTML = `<div class="coach-err">Couldn't reach the coach. Try again.</div>`;
+    }
+    if (btn) { btn.disabled = false; btn.textContent = "Re-read my calls"; }
+  }
+
+  function renderCoachCard() {
+    coachEl.innerHTML = `
+      <div class="coach-card">
+        <div class="coach-head">
+          <div>
+            <div class="coach-title">Li-Da's read on you</div>
+            <div class="coach-sub">An honest look at how you decide — coaches your process, not your picks.</div>
+          </div>
+          <button id="coachBtn" class="coach-btn">Read my calls</button>
+        </div>
+        <div id="coachOut"></div>
+      </div>`;
+    document.getElementById("coachBtn").addEventListener("click", requestCoach);
+  }
+
   async function init() {
     try {
       const r = await fetch("/api/logs");
@@ -334,6 +447,7 @@
       await Promise.all([loadPrices(symbols), loadBars(symbols)]);
       allRows.forEach((e) => { gradeMap[keyOf(e)] = gradeCall(e, barsMap[e.symbol], priceMap[e.symbol]); });
       renderSummary(allRows);
+      renderCoachCard();
       renderFilter(allRows);
       listEl.innerHTML = allRows.map(entryCard).join("");
     } catch (e) {

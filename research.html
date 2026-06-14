@@ -256,6 +256,54 @@
     .signal-module.conf-high { animation: none; }
     * { transition: none !important; }
   }
+
+  /* ---- immersive: living ambient glow ---- */
+  body::before {
+    content: ""; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(600px 480px at 30% 22%, rgba(133,118,255,0.10), transparent 60%),
+      radial-gradient(560px 520px at 72% 78%, rgba(133,118,255,0.08), transparent 60%);
+    animation: lida-drift 26s ease-in-out infinite alternate;
+  }
+  @keyframes lida-drift {
+    0%   { transform: translate3d(0,0,0) scale(1); opacity: 0.8; }
+    100% { transform: translate3d(2%, -2%, 0) scale(1.06); opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) { body::before { animation: none; } }
+
+  /* ---- immersive: analyzing shimmer ---- */
+  .read.thinking { position: relative; overflow: hidden; color: var(--violet-soft); font-family: "IBM Plex Mono", monospace; font-size: 14px; }
+  .read.thinking::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(100deg, transparent 18%, rgba(133,118,255,0.12) 50%, transparent 82%);
+    transform: translateX(-100%); animation: lida-scan 1.6s ease-in-out infinite;
+  }
+  @keyframes lida-scan { to { transform: translateX(100%); } }
+  @media (prefers-reduced-motion: reduce) { .read.thinking::after { animation: none; } }
+
+  /* ---- full-page two-column desk (wide screens only) ---- */
+  @media (min-width: 980px) {
+    .wrap { max-width: 1180px; }
+    .wrap > .eyebrow, .wrap > h1, .wrap > .sub, .wrap > .row, .wrap > .foot {
+      max-width: 680px; margin-left: auto; margin-right: auto;
+    }
+    .wrap > .eyebrow, .wrap > h1, .wrap > .sub { text-align: center; }
+    .wrap > .row { justify-content: center; }
+    #out {
+      display: grid; grid-template-columns: 1.32fr 1fr; gap: 16px; align-items: start;
+      grid-template-areas:
+        "price    read"
+        "chart    read"
+        "evidence move";
+    }
+    #out > * { margin-top: 0; }
+    #out > .card       { grid-area: price; }
+    #out > .chart-card { grid-area: chart; }
+    #out > .read       { grid-area: read; }
+    #out > .evidence   { grid-area: evidence; }
+    #out > .move       { grid-area: move; }
+  }
+
 </style>
 </head>
 <body>

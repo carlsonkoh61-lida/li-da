@@ -1,34 +1,32 @@
 // Vercel serverless function → https://li-da.vercel.app/api/analyze?symbol=AAPL
 // Put this at:  /api/analyze.js   (replaces the previous version)
 //
-// Pulls quote, news, fundamentals, analyst recs, profile from Finnhub, filters
-// the news, then asks Claude for a grounded read, a distilled news take, AND a
-// stress-test that pressure-tests the thesis.
+// Pulls quote, news, fundamentals, analyst recs, profile, AND a peer group from
+// Finnhub, then asks Claude for a grounded read, a news take, a stress-test, and
+// a peer comparison ("cheap or expensive vs its rivals").
 
 const SYSTEM_PROMPT = `You are the analysis engine for one person's private stock-research tool.
 You are NOT a financial advisor and must never give an order to obey. Your job is decision-support:
 lay out both sides honestly so the person makes their own call.
 
-You receive: the latest quote, recent news, basic fundamentals (valuation, margins, growth,
-balance-sheet ratios), and the latest analyst recommendation counts.
+You receive: the latest quote, recent news, basic fundamentals, the latest analyst recommendation counts,
+and a peer group with each peer's P/E and profit margin.
 
 Rules:
 - Always give a real bear case, weighted equally with the bull case. Never hide the risks.
-- Use concrete numbers from the fundamentals in your points where they matter. NEVER invent a figure
-  that is null or missing.
+- Use concrete numbers from the fundamentals where they matter. NEVER invent a figure that is null.
 - Treat analyst consensus as one input, not gospel.
-- Synthesize the news into "news_take": read ALL the provided headlines/summaries, judge the overall
-  signal, and be honest about quality. If the news is thin, stale, or mostly generic market noise, say so
-  and set the signal to "quiet" or "mixed". Paraphrase; never quote.
-- Pressure-test the thesis in "stress_test": name the single load-bearing assumption the bull case
-  secretly depends on; the kill switch (the concrete development that would prove this read flat wrong);
-  an honest fragility rating (how much of the whole thesis rests on that one assumption); and a base_rate
-  reality anchor — the grounded reality for this kind of situation (e.g. "most turnarounds fail",
-  "most hype fades"). The base rate is a reality check, NOT a price prediction. Be willing to rate
-  fragility "high" — surfacing a fragile thesis is the entire point of this tool.
-- Your "lean" is one input, not a verdict. Set "confidence" honestly. Most real situations are "low" or
-  "medium"; reserve "high" for genuinely clear-cut cases where fundamentals and news clearly align.
-- Keep every point short, plain, and jargon-free. No hype.
+- Synthesize the news into "news_take": judge the overall signal and be honest about quality (thin/stale/
+  noisy news → "quiet" or "mixed"). Paraphrase; never quote.
+- Pressure-test the thesis in "stress_test": the single load-bearing assumption the bull case depends on;
+  the kill switch that would prove the read wrong; an honest fragility rating; and a base_rate reality
+  anchor (a reality check, NOT a price prediction). Be willing to rate fragility "high".
+- Compare to peers in "peer_take": judge where this stock sits versus its peer group on valuation (P/E)
+  and quality (margins). Set "relative" to premium / discount / in-line / mixed, and explain in 1-2
+  sentences what that gap implies (a premium can be earned by better margins, or a warning sign). If peer
+  data is sparse or missing, say so and set relative to "mixed".
+- Your "lean" is one input, not a verdict. Set "confidence" honestly; reserve "high" for clear-cut cases.
+- Keep every point short, plain, jargon-free. No hype.
 - Return ONLY a JSON object — no markdown, no code fences, no text before or after — in exactly this shape:
 {
   "summary": "one plain sentence on where this stands",
@@ -39,17 +37,21 @@ Rules:
   "confidence_reason": "one short sentence on why",
   "levels": "plain-language note on price levels worth watching, or 'Not enough data'",
   "news_take": {
-    "headline": "one short line distilling what the recent news amounts to",
+    "headline": "one short line distilling the recent news",
     "signal": "positive" | "negative" | "mixed" | "quiet",
     "detail": "1-2 plain sentences: what it means and how much to trust it",
-    "what_matters": ["the item(s) that genuinely matter, paraphrased — empty array if nothing material"]
+    "what_matters": ["the item(s) that genuinely matter, paraphrased — empty array if none"]
   },
   "stress_test": {
-    "load_bearing": "the single assumption the bull case most depends on, in plain words",
+    "load_bearing": "the single assumption the bull case most depends on",
     "kill_switch": "the concrete development that would prove this read flat wrong",
     "fragility": "low" | "medium" | "high",
-    "fragility_reason": "one short sentence on why the thesis is that fragile",
-    "base_rate": "the honest base-rate / reality anchor for this kind of situation — a reality check, not a prediction"
+    "fragility_reason": "one short sentence on why",
+    "base_rate": "the honest base-rate / reality anchor — a reality check, not a prediction"
+  },
+  "peer_take": {
+    "relative": "premium" | "discount" | "in-line" | "mixed",
+    "detail": "1-2 sentences on where it sits vs peers and what that implies"
   },
   "before_you_act": ["a question or reminder that pushes the reader to make their own decision"]
 }`;
@@ -87,13 +89,16 @@ export default async function handler(req, res) {
     const today = new Date();
     const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
     const fmt = (d) => d.toISOString().slice(0, 10);
+    const pick = (v) => (typeof v === "number" ? v : null);
 
-    const [quoteRes, newsRes, metricRes, recRes, profRes] = await Promise.all([
+    // Round 1: everything that only needs the target symbol
+    const [quoteRes, newsRes, metricRes, recRes, profRes, peersRes] = await Promise.all([
       fetch(`${base}/quote?symbol=${symbol}&token=${FINNHUB}`),
       fetch(`${base}/company-news?symbol=${symbol}&from=${fmt(weekAgo)}&to=${fmt(today)}&token=${FINNHUB}`),
       fetch(`${base}/stock/metric?symbol=${symbol}&metric=all&token=${FINNHUB}`),
       fetch(`${base}/stock/recommendation?symbol=${symbol}&token=${FINNHUB}`),
       fetch(`${base}/stock/profile2?symbol=${symbol}&token=${FINNHUB}`),
+      fetch(`${base}/stock/peers?symbol=${symbol}&token=${FINNHUB}`),
     ]);
 
     const quote = await quoteRes.json();
@@ -101,11 +106,13 @@ export default async function handler(req, res) {
     const metricRaw = await metricRes.json();
     const recRaw = await recRes.json();
     const profile = await profRes.json();
+    const peersRaw = await peersRes.json();
 
     if (!quote || quote.c === 0) {
       return res.status(404).json({ error: `No data for "${symbol}". Check the ticker.` });
     }
 
+    // news filter
     const terms = nameTerms(profile && profile.name, symbol);
     const onTopic = (n) => {
       const blob = (`${n.headline || ""} ${n.summary || ""}`).toLowerCase();
@@ -114,17 +121,13 @@ export default async function handler(req, res) {
     const allNews = Array.isArray(newsRaw) ? newsRaw : [];
     const filtered = allNews.filter(onTopic);
     const chosen = (filtered.length ? filtered : allNews).slice(0, 8);
-
     const news = chosen.map((n) => ({
-      headline: n.headline,
-      summary: (n.summary || "").slice(0, 300),
-      source: n.source || "",
-      url: n.url || "",
-      datetime: n.datetime || null,
+      headline: n.headline, summary: (n.summary || "").slice(0, 300),
+      source: n.source || "", url: n.url || "", datetime: n.datetime || null,
     }));
 
+    // target fundamentals
     const m = (metricRaw && metricRaw.metric) || {};
-    const pick = (v) => (typeof v === "number" ? v : null);
     const figures = {
       marketCap: pick(m.marketCapitalization),
       pe: pick(m.peTTM != null ? m.peTTM : m.peNormalizedAnnual),
@@ -138,35 +141,51 @@ export default async function handler(req, res) {
       beta: pick(m.beta),
     };
 
-    const r = Array.isArray(recRaw) && recRaw.length ? recRaw[0] : null;
-    const analyst = r
-      ? { strongBuy: r.strongBuy || 0, buy: r.buy || 0, hold: r.hold || 0, sell: r.sell || 0, strongSell: r.strongSell || 0, period: r.period || "" }
+    // analyst
+    const rr = Array.isArray(recRaw) && recRaw.length ? recRaw[0] : null;
+    const analyst = rr
+      ? { strongBuy: rr.strongBuy || 0, buy: rr.buy || 0, hold: rr.hold || 0, sell: rr.sell || 0, strongSell: rr.strongSell || 0, period: rr.period || "" }
       : null;
+
+    // Round 2: fetch metrics for up to 4 peers (free endpoint, run in parallel)
+    let peerSymbols = Array.isArray(peersRaw) ? peersRaw.filter((s) => s && s.toUpperCase() !== symbol).slice(0, 4) : [];
+    const peerMetrics = await Promise.all(
+      peerSymbols.map((s) =>
+        fetch(`${base}/stock/metric?symbol=${s}&metric=all&token=${FINNHUB}`).then((r) => r.json()).catch(() => null)
+      )
+    );
+    const peerRows = peerSymbols.map((s, i) => {
+      const mm = (peerMetrics[i] && peerMetrics[i].metric) || {};
+      return {
+        symbol: s,
+        pe: pick(mm.peTTM != null ? mm.peTTM : mm.peNormalizedAnnual),
+        margin: pick(mm.netProfitMarginTTM),
+      };
+    });
+    const peers = [
+      { symbol, pe: figures.pe, margin: figures.profitMargin, isTarget: true },
+      ...peerRows,
+    ];
 
     const factPack = {
       symbol,
       company: (profile && profile.name) || symbol,
-      price: quote.c,
-      change: quote.d,
-      percent: quote.dp,
-      open: quote.o,
-      prevClose: quote.pc,
-      dayHigh: quote.h,
-      dayLow: quote.l,
+      price: quote.c, change: quote.d, percent: quote.dp,
+      open: quote.o, prevClose: quote.pc, dayHigh: quote.h, dayLow: quote.l,
       fundamentals: figures,
       analyst,
+      peers: peers.map((p) => ({ symbol: p.symbol, pe: p.pe, margin: p.margin })),
       recent_news: news.map((n) => ({ headline: n.headline, summary: n.summary })),
     };
 
-    const userContent =
-      `Here is the latest data for ${symbol}. Give your read.\n\n` + JSON.stringify(factPack, null, 2);
+    const userContent = `Here is the latest data for ${symbol}. Give your read.\n\n` + JSON.stringify(factPack, null, 2);
 
     const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "content-type": "application/json", "x-api-key": ANTHROPIC, "anthropic-version": "2023-06-01" },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 1600,
+        max_tokens: 1700,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userContent }],
       }),
@@ -187,7 +206,7 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: "Claude's reply wasn't in the expected format. Try again." });
     }
 
-    return res.status(200).json({ symbol, read, news, figures, analyst });
+    return res.status(200).json({ symbol, read, news, figures, analyst, peers });
   } catch (err) {
     return res.status(500).json({ error: "Something went wrong running the read. Try again in a moment." });
   }

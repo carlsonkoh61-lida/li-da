@@ -34,12 +34,15 @@
     background: linear-gradient(118deg, var(--paper) 38%, var(--violet-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .sub { color: var(--muted); font-size: 15px; line-height: 1.55; margin-bottom: 28px; }
 
-  .summary { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  .summary { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
   .stat-chip { background: var(--panel); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; flex: 1; min-width: 120px; }
   .stat-chip .n { font-family: "IBM Plex Mono", monospace; font-size: 22px; font-weight: 500; }
+  .stat-chip .n.up { color: var(--up); } .stat-chip .n.down { color: var(--down); }
   .stat-chip .l { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-top: 2px; }
+  .score-hint { font-size: 13px; color: var(--muted); margin: 4px 0 18px; line-height: 1.5; }
+  .score-head { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--violet-soft); margin: 18px 0 8px; }
 
-  .filter { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .filter { display: flex; align-items: center; gap: 10px; margin: 18px 0 20px; }
   .filter label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
   select { background: rgba(20,24,38,0.6); border: 1px solid var(--line); border-radius: 10px; color: var(--paper); font-family: "IBM Plex Mono", monospace; font-size: 14px; padding: 9px 12px; outline: none; cursor: pointer; }
   select:focus { border-color: var(--violet); }
@@ -60,6 +63,10 @@
   .e-levels div span:first-child { color: var(--muted); text-transform: uppercase; font-size: 10px; letter-spacing: 0.06em; display: block; margin-bottom: 2px; }
   .e-levels div span:last-child { font-family: "IBM Plex Mono", monospace; }
 
+  .e-result-row { margin-top: 14px; }
+  .e-result { font-family: "IBM Plex Mono", monospace; font-size: 14px; font-weight: 500; }
+  .e-result.up { color: var(--up); } .e-result.down { color: var(--down); } .e-result.muted { color: var(--muted); font-weight: 400; }
+
   .e-ai { font-size: 13px; color: var(--muted); margin: 14px 0 6px; line-height: 1.5; }
   .e-ai b { color: var(--violet-soft); font-weight: 500; }
   .e-tag { font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-left: 6px; }
@@ -72,7 +79,7 @@
   .empty, .error { color: var(--muted); font-size: 15px; text-align: center; padding: 40px 0; }
   .error { color: var(--down); }
   .loading { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 14px; text-align: center; padding: 40px 0; }
-  .foot { margin-top: 40px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 20px; line-height: 1.5; }
+  .foot { margin-top: 40px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 20px; line-height: 1.55; }
 </style>
 </head>
 <body>
@@ -81,14 +88,14 @@
       <span class="eyebrow">Li-Da · journal</span>
       <a href="/research.html">← Research desk</a>
     </div>
-    <h1>The mirror.</h1>
-    <p class="sub">Every call you logged, checked against where the price sits now. Did the read hold? Did you follow your own rules?</p>
+    <h1>The scorecard.</h1>
+    <p class="sub">Every call you logged, walked forward through real price history — did it hit your stop or your target first? Your honest track record.</p>
 
     <div id="summary"></div>
     <div id="filterbar"></div>
     <div id="list"><div class="loading">Loading your journal…</div></div>
 
-    <p class="foot">A record, not a scoreboard. The point is to learn from your own calls — honestly.</p>
+    <p class="foot">Scored on daily highs and lows — whichever of your stop or target the price reached first. Honest, but a daily-bar approximation: it assumes a clean fill at your exact level, not a real broker execution.</p>
   </div>
 
 <script>
@@ -97,24 +104,75 @@
   const filterEl = document.getElementById("filterbar");
   let allRows = [];
   let priceMap = {};
+  let barsMap = {};
+  let gradeMap = {};
 
+  const keyOf = (e) => e.id || (e.symbol + "|" + e.created_at);
   function money(n) { return n == null ? "—" : "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
   function fmtDate(iso) {
     try { return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); }
     catch (e) { return ""; }
   }
+  function fmtDay(d) {
+    try { return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" }); }
+    catch (e) { return d; }
+  }
 
   function rr(e) {
     if (e.entry == null || e.stop_loss == null || e.take_profit == null) return null;
-    const risk = Math.abs(e.entry - e.stop_loss), reward = Math.abs(e.take_profit - e.entry);
+    const risk = Math.abs(Number(e.entry) - Number(e.stop_loss)), reward = Math.abs(Number(e.take_profit) - Number(e.entry));
     if (!risk) return null;
     return "1 : " + (reward / risk).toFixed(1);
   }
 
+  // Walk price history forward from the log date; whichever of stop/target is reached first wins.
+  function gradeCall(e, bars, live) {
+    const dec = (e.decision || "").toLowerCase();
+    const entry = e.entry != null ? Number(e.entry) : (e.price_at_log != null ? Number(e.price_at_log) : null);
+    const stop = e.stop_loss != null ? Number(e.stop_loss) : null;
+    const target = e.take_profit != null ? Number(e.take_profit) : null;
+    if (!entry || stop == null || target == null || (dec !== "buy" && dec !== "sell")) return { status: "ungraded" };
+    const risk = Math.abs(entry - stop);
+    if (!risk) return { status: "ungraded" };
+    if (!bars || !bars.length) return { status: "nodata" };
+    const logDate = String(e.created_at).slice(0, 10);
+    const fwd = bars.filter((b) => b.date > logDate);
+    if (!fwd.length) {
+      if (logDate >= bars[bars.length - 1].date) return { status: "fresh" };
+      return { status: "old" };
+    }
+    const isLong = dec === "buy";
+    for (let i = 0; i < fwd.length; i++) {
+      const b = fwd[i];
+      const hitStop = isLong ? b.low <= stop : b.high >= stop;
+      const hitTarget = isLong ? b.high >= target : b.low <= target;
+      if (hitStop && hitTarget) return { status: "ambiguous", date: b.date };
+      if (hitTarget) return { status: "win", r: Math.abs(target - entry) / risk, date: b.date };
+      if (hitStop) return { status: "loss", r: -1, date: b.date };
+    }
+    const cur = live != null ? live : fwd[fwd.length - 1].close;
+    const openR = (isLong ? cur - entry : entry - cur) / risk;
+    return { status: "open", r: openR };
+  }
+
+  function resultLine(g) {
+    if (!g) return "";
+    switch (g.status) {
+      case "win": return `<span class="e-result up">✓ hit target · +${g.r.toFixed(1)}R · ${fmtDay(g.date)}</span>`;
+      case "loss": return `<span class="e-result down">✗ stopped out · −1R · ${fmtDay(g.date)}</span>`;
+      case "open": return `<span class="e-result ${g.r >= 0 ? "up" : "down"}">○ still open · ${g.r >= 0 ? "+" : ""}${g.r.toFixed(1)}R so far</span>`;
+      case "ambiguous": return `<span class="e-result muted">stop & target hit the same day — can't tell from daily bars</span>`;
+      case "ungraded": return `<span class="e-result muted">no exits set — not scored</span>`;
+      case "fresh": return `<span class="e-result muted">just logged — no price action yet</span>`;
+      case "old": return `<span class="e-result muted">older than available price history</span>`;
+      default: return `<span class="e-result muted">price data unavailable</span>`;
+    }
+  }
+
   function status(e, cur) {
     if (cur == null) return null;
-    const base = e.entry != null ? e.entry : e.price_at_log;
+    const base = e.entry != null ? Number(e.entry) : Number(e.price_at_log);
     const dir = e.decision;
     let movePct = base ? ((cur - base) / base) * 100 : null;
     let moveTone = "flat";
@@ -123,17 +181,7 @@
       else if (dir === "sell") moveTone = cur <= base ? "up" : "down";
       else moveTone = cur >= base ? "up" : "down";
     }
-    let level = null, levelTone = "muted";
-    if (dir === "buy") {
-      if (e.take_profit != null && cur >= e.take_profit) { level = "past your target"; levelTone = "up"; }
-      else if (e.stop_loss != null && cur <= e.stop_loss) { level = "past your stop"; levelTone = "down"; }
-      else if (e.take_profit != null || e.stop_loss != null) { level = "in range"; levelTone = "muted"; }
-    } else if (dir === "sell") {
-      if (e.take_profit != null && cur <= e.take_profit) { level = "past your target"; levelTone = "up"; }
-      else if (e.stop_loss != null && cur >= e.stop_loss) { level = "past your stop"; levelTone = "down"; }
-      else if (e.take_profit != null || e.stop_loss != null) { level = "in range"; levelTone = "muted"; }
-    }
-    return { movePct, moveTone, level, levelTone, base };
+    return { movePct, moveTone, base };
   }
 
   function alignTag(e) {
@@ -150,6 +198,7 @@
     const cur = priceMap[e.symbol];
     const r = rr(e);
     const st = status(e, cur);
+    const g = gradeMap[keyOf(e)];
     const dec = (e.decision || "—").toLowerCase();
 
     const levels = `
@@ -160,6 +209,8 @@
         ${e.take_profit != null ? `<div><span>Target</span><span>${money(e.take_profit)}</span></div>` : ""}
         ${r ? `<div><span>Risk:Reward</span><span>${r}</span></div>` : ""}
       </div>`;
+
+    const resultHtml = `<div class="e-result-row">${resultLine(g)}</div>`;
 
     const ai = e.ai_lean
       ? `<div class="e-ai">Li-Da leaned <b>${esc(e.ai_lean)}</b>${e.ai_confidence ? " (" + esc(e.ai_confidence) + ")" : ""} · you chose <b>${esc(dec)}</b> ${alignTag(e)}</div>`
@@ -172,8 +223,7 @@
       const movePart = st && st.movePct != null
         ? `<span class="e-move ${st.moveTone}">${st.movePct >= 0 ? "+" : ""}${st.movePct.toFixed(1)}% since ${e.entry != null ? "entry" : "log"}</span>`
         : "";
-      const levelPart = st && st.level ? `<span class="e-status ${st.levelTone}">${st.level}</span>` : "";
-      live = `<div class="e-live"><span class="now">now ${money(cur)}</span>${movePart}${levelPart}</div>`;
+      live = `<div class="e-live"><span class="now">now ${money(cur)}</span>${movePart}</div>`;
     } else {
       live = `<div class="e-live"><span class="e-status muted">live price unavailable</span></div>`;
     }
@@ -186,6 +236,7 @@
           <span class="e-date">${fmtDate(e.created_at)}</span>
         </div>
         ${levels}
+        ${resultHtml}
         ${ai}
         ${reason}
         ${live}
@@ -198,12 +249,37 @@
     let withStop = 0;
     rows.forEach((e) => { if (by[e.decision] != null) by[e.decision]++; if (e.stop_loss != null) withStop++; });
     const disc = total ? Math.round((withStop / total) * 100) : 0;
+
+    let wins = 0, losses = 0, openN = 0, rsum = 0;
+    rows.forEach((e) => {
+      const g = gradeMap[keyOf(e)];
+      if (!g) return;
+      if (g.status === "win") { wins++; rsum += g.r; }
+      else if (g.status === "loss") { losses++; rsum += -1; }
+      else if (g.status === "open") { openN++; }
+    });
+    const closed = wins + losses;
+    const winRate = closed ? Math.round((wins / closed) * 100) : null;
+    const avgR = closed ? rsum / closed : null;
+
+    const scorecard = `
+      <div class="score-head">Track record</div>
+      <div class="summary">
+        <div class="stat-chip"><div class="n">${closed}</div><div class="l">closed calls</div></div>
+        <div class="stat-chip"><div class="n">${winRate != null ? winRate + "%" : "—"}</div><div class="l">win rate</div></div>
+        <div class="stat-chip"><div class="n ${avgR != null ? (avgR >= 0 ? "up" : "down") : ""}">${avgR != null ? (avgR >= 0 ? "+" : "") + avgR.toFixed(2) + "R" : "—"}</div><div class="l">avg result</div></div>
+      </div>
+      ${closed === 0
+        ? `<p class="score-hint">No calls have closed yet${openN ? ` — ${openN} still open` : ""}. Once a call hits your stop or target, your real win rate and average R land here.</p>`
+        : `<p class="score-hint">${wins} hit target · ${losses} stopped out${openN ? ` · ${openN} still open` : ""}. Avg result is your expectancy per call, measured in R (multiples of what you risked).</p>`}`;
+
     summaryEl.innerHTML = `
       <div class="summary">
         <div class="stat-chip"><div class="n">${total}</div><div class="l">logged calls</div></div>
         <div class="stat-chip"><div class="n">${by.buy} · ${by.watch} · ${by.sell}</div><div class="l">buy · watch · sell</div></div>
         <div class="stat-chip"><div class="n">${disc}%</div><div class="l">set an exit</div></div>
-      </div>`;
+      </div>
+      ${scorecard}`;
   }
 
   function renderFilter(rows) {
@@ -233,6 +309,16 @@
     }));
   }
 
+  async function loadBars(symbols) {
+    await Promise.all(symbols.map(async (s) => {
+      try {
+        const r = await fetch("/api/chart?symbol=" + encodeURIComponent(s) + "&range=1y");
+        const d = await r.json();
+        if (r.ok && Array.isArray(d.points)) barsMap[s] = d.points;
+      } catch (e) { /* leave unset */ }
+    }));
+  }
+
   async function init() {
     try {
       const r = await fetch("/api/logs");
@@ -240,13 +326,15 @@
       if (!r.ok) { listEl.innerHTML = `<div class="error">${esc(d.error || "Couldn't load journal.")}</div>`; return; }
       allRows = d.rows || [];
       if (!allRows.length) {
+        summaryEl.innerHTML = "";
         listEl.innerHTML = `<div class="empty">No calls logged yet. Pull a read on the desk and log your first decision.</div>`;
         return;
       }
+      const symbols = [...new Set(allRows.map((r) => r.symbol))];
+      await Promise.all([loadPrices(symbols), loadBars(symbols)]);
+      allRows.forEach((e) => { gradeMap[keyOf(e)] = gradeCall(e, barsMap[e.symbol], priceMap[e.symbol]); });
       renderSummary(allRows);
       renderFilter(allRows);
-      const symbols = [...new Set(allRows.map((r) => r.symbol))];
-      await loadPrices(symbols);
       listEl.innerHTML = allRows.map(entryCard).join("");
     } catch (e) {
       listEl.innerHTML = `<div class="error">Couldn't reach the journal. Try again.</div>`;

@@ -8,6 +8,7 @@
   var ROOMS = [
     { label: "Home", href: "/index.html" },
     { label: "Desk", href: "/research.html" },
+    { label: "Watchlist", href: "/watchlist.html" },
     { label: "Journal", href: "/journal.html" },
     { label: "Tasks", href: "/lida-tasks.html" },
   ];

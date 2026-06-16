@@ -978,6 +978,15 @@
   btn.addEventListener("click", getRead);
   input.addEventListener("keydown", (e) => { if (e.key === "Enter") getRead(); });
   input.focus();
+
+  // Auto-pull a read when a ticker is passed in the URL (e.g. tapped from the Watchlist).
+  if (window.lidaAuth) {
+    window.lidaAuth.getSession().then(function (sess) {
+      if (!sess) return;
+      var qp = new URLSearchParams(window.location.search).get("symbol");
+      if (qp) { input.value = qp.toUpperCase(); getRead(); }
+    });
+  }
 </script>
   <script src="/nav.js" defer></script>
 </body>

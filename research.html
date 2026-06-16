@@ -227,6 +227,17 @@
   .rf-detail { color: var(--muted); font-size: 13px; line-height: 1.5; margin-top: 2px; }
   .rf-caveat { color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 13px; font-style: italic; }
   .rf-clear { color: var(--up); font-size: 14px; line-height: 1.5; }
+  /* ---- earnings & execution ---- */
+  .ea-next { font-size: 14px; margin-bottom: 10px; }
+  .ea-next b { font-family: "IBM Plex Mono", monospace; }
+  .ea-next.soon { color: #F5B870; }
+  .ea-next.muted { color: var(--muted); }
+  .ea-hist { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .ea-q { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.04em; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); }
+  .ea-q.beat { color: var(--up); border-color: rgba(74,222,154,0.4); }
+  .ea-q.miss { color: var(--down); border-color: rgba(255,107,107,0.4); }
+  .ea-record { font-size: 13px; color: var(--muted); }
+  .ea-record b { color: var(--paper); }
 
   /* ---- technicals ---- */
   .tech-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
@@ -563,7 +574,36 @@
         <details class="sources"><summary>Sources (${news.length})</summary><div class="news">${sourceItems}</div></details>
       </div>`;
 
-    return `<div class="evidence show"><h3>What it read</h3>${figsHtml}${rfHtml}${techHtml}${regimeHtml}${peersHtml}${analystHtml}${newsHtml}</div>`;
+    // earnings & execution (next date + beat/miss record)
+    const ea = d.earnings || null;
+    let earnHtml = "";
+    if (ea && (ea.next_date || (ea.history && ea.history.length))) {
+      const soon = ea.days_to != null && ea.days_to <= 14 && ea.days_to >= 0;
+      let dateLine;
+      if (ea.next_date) {
+        const dl = new Date(ea.next_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        const days = ea.days_to != null ? ` · in ${ea.days_to} day${ea.days_to === 1 ? "" : "s"}` : "";
+        dateLine = `<div class="ea-next ${soon ? "soon" : ""}">Next earnings: <b>${esc(dl)}</b>${days}${soon ? " · binary event soon" : ""}</div>`;
+      } else {
+        dateLine = `<div class="ea-next muted">Next earnings date not available on this data tier.</div>`;
+      }
+      const hist = (ea.history || []).map((q) => {
+        if (q.beat == null) return "";
+        const sp = q.surprisePercent != null ? ` ${q.surprisePercent >= 0 ? "+" : ""}${q.surprisePercent.toFixed(1)}%` : "";
+        return `<span class="ea-q ${q.beat ? "beat" : "miss"}">${q.beat ? "beat" : "miss"}${sp}</span>`;
+      }).join("");
+      const record = ea.total ? `<div class="ea-record">Beaten estimates in <b>${ea.beats} of ${ea.total}</b> recent quarters</div>` : "";
+      earnHtml = `
+        <div class="block">
+          <div class="lab">Earnings & execution</div>
+          ${dateLine}
+          ${hist ? `<div class="ea-hist">${hist}</div>` : ""}
+          ${record}
+          <p class="rf-caveat">Execution measured as reported EPS vs analyst estimates — one lens, not the whole story.</p>
+        </div>`;
+    }
+
+    return `<div class="evidence show"><h3>What it read</h3>${figsHtml}${rfHtml}${techHtml}${regimeHtml}${peersHtml}${analystHtml}${earnHtml}${newsHtml}</div>`;
   }
 
   function renderMove() {

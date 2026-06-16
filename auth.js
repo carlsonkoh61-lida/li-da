@@ -15,7 +15,7 @@
 */
 (function () {
   var SUPABASE_URL = "https://kwwjapbmkslbfdddbukn.supabase.co";
-  var SUPABASE_ANON_KEY = "PASTE_YOUR_ANON_PUBLIC_KEY_HERE";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3d2phcGJta3NsYmZkZGRidWtuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4Mjk3ODgsImV4cCI6MjA5NjQwNTc4OH0.4txRyh8y70Kea3cu2oGAzA_ztstpfoQCHVraz8lvsNM";
 
   if (!window.supabase || !window.supabase.createClient) {
     console.error("[Li-Da auth] supabase-js not loaded. Add the CDN <script> before auth.js.");

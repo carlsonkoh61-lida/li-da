@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Li-Da · Sign in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0B0D14;
+    --panel: #12141D;
+    --line: rgba(255,255,255,0.08);
+    --paper: #ECECF1;
+    --muted: #8A8F9E;
+    --brand: #8576FF;
+    --down: #FF6B6B;
+    --up: #4ADE9A;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--paper);
+    font-family: "Inter", system-ui, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 24px;
+    position: relative; overflow: hidden;
+  }
+  /* ambient drift to match the Desk */
+  body::before {
+    content: ""; position: fixed; inset: -30%;
+    background: radial-gradient(60% 50% at 30% 30%, rgba(133,118,255,0.10), transparent 70%);
+    animation: drift 22s ease-in-out infinite alternate; pointer-events: none;
+  }
+  @keyframes drift { from { transform: translate(-4%, -2%); } to { transform: translate(4%, 3%); } }
+  @media (prefers-reduced-motion: reduce) { body::before { animation: none; } }
+
+  .card {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 380px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 34px 30px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+  }
+  .brand {
+    font-family: "IBM Plex Mono", monospace; font-weight: 500;
+    letter-spacing: 0.18em; font-size: 13px; color: var(--brand);
+    text-align: center; margin-bottom: 22px;
+  }
+  h1 {
+    font-family: "Space Grotesk", sans-serif; font-weight: 600;
+    font-size: 24px; margin: 0 0 6px; text-align: center;
+  }
+  .sub { color: var(--muted); font-size: 13.5px; text-align: center; margin: 0 0 24px; line-height: 1.5; }
+
+  label { display: block; font-size: 12px; color: var(--muted); margin: 0 0 6px; letter-spacing: 0.02em; }
+  input {
+    width: 100%; background: #0E1018; color: var(--paper);
+    border: 1px solid var(--line); border-radius: 11px;
+    padding: 12px 13px; font-size: 14.5px; font-family: "Inter", sans-serif;
+    margin-bottom: 15px; outline: none; transition: border-color 0.15s;
+  }
+  input:focus { border-color: rgba(133,118,255,0.6); }
+
+  button.primary {
+    width: 100%; background: var(--brand); color: #0B0D14;
+    border: none; border-radius: 11px; padding: 13px;
+    font-size: 15px; font-weight: 600; font-family: "Space Grotesk", sans-serif;
+    cursor: pointer; transition: opacity 0.15s; margin-top: 4px;
+  }
+  button.primary:hover { opacity: 0.9; }
+  button.primary:disabled { opacity: 0.5; cursor: default; }
+
+  .toggle { text-align: center; margin-top: 18px; font-size: 13px; color: var(--muted); }
+  .toggle a { color: var(--brand); cursor: pointer; text-decoration: none; }
+  .toggle a:hover { text-decoration: underline; }
+
+  .msg { font-size: 13px; line-height: 1.5; margin: 4px 0 14px; padding: 10px 12px; border-radius: 10px; display: none; }
+  .msg.err { display: block; color: var(--down); border: 1px solid rgba(255,107,107,0.3); background: rgba(255,107,107,0.06); }
+  .msg.ok { display: block; color: var(--up); border: 1px solid rgba(74,222,154,0.3); background: rgba(74,222,154,0.06); }
+
+  /* signed-in state */
+  .signed { display: none; text-align: center; }
+  .signed.show { display: block; }
+  .signed .who { font-family: "IBM Plex Mono", monospace; font-size: 14px; color: var(--paper); margin: 6px 0 4px; word-break: break-all; }
+  .signed .tick { color: var(--up); font-size: 13px; margin-bottom: 22px; }
+  .signed .row { display: flex; gap: 10px; }
+  .signed a.btn, .signed button.btn {
+    flex: 1; display: block; text-align: center; text-decoration: none;
+    border-radius: 11px; padding: 12px; font-size: 14px; font-weight: 600;
+    font-family: "Space Grotesk", sans-serif; cursor: pointer;
+  }
+  .signed a.btn { background: var(--brand); color: #0B0D14; }
+  .signed button.btn { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+  .signed button.btn:hover { color: var(--paper); }
+
+  .note { color: var(--muted); font-size: 11.5px; text-align: center; margin-top: 20px; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">LI-DA</div>
+
+    <!-- AUTH FORM -->
+    <div id="formWrap">
+      <h1 id="title">Welcome back</h1>
+      <p class="sub" id="subtitle">Sign in to your research desk.</p>
+
+      <div class="msg" id="msg"></div>
+
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" placeholder="you@email.com" />
+
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+
+      <button class="primary" id="submitBtn">Sign in</button>
+
+      <div class="toggle" id="toggle">
+        New here? <a id="toggleLink">Create an account</a>
+      </div>
+    </div>
+
+    <!-- SIGNED-IN STATE -->
+    <div class="signed" id="signed">
+      <h1>You're in.</h1>
+      <div class="who" id="whoEmail"></div>
+      <div class="tick">✓ signed in &amp; secured</div>
+      <div class="row">
+        <a class="btn" href="/research.html">Go to Desk</a>
+        <button class="btn" id="signOutBtn">Sign out</button>
+      </div>
+    </div>
+
+    <p class="note">Your journal is private to your account — secured at the database level.</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/auth.js"></script>
+  <script>
+    var mode = "signin"; // or "signup"
+    var $ = function (id) { return document.getElementById(id); };
+
+    function showMsg(text, kind) {
+      var m = $("msg");
+      m.textContent = text;
+      m.className = "msg " + kind;
+    }
+    function clearMsg() { $("msg").className = "msg"; }
+
+    function showSignedIn(email) {
+      $("formWrap").style.display = "none";
+      $("whoEmail").textContent = email;
+      $("signed").classList.add("show");
+    }
+
+    function nextDest() {
+      var p = new URLSearchParams(window.location.search).get("next");
+      return p || null;
+    }
+
+    function setMode(m) {
+      mode = m;
+      if (m === "signup") {
+        $("title").textContent = "Create your account";
+        $("subtitle").textContent = "Start your private research journal.";
+        $("submitBtn").textContent = "Create account";
+        $("password").setAttribute("autocomplete", "new-password");
+        $("toggle").innerHTML = 'Already have an account? <a id="toggleLink">Sign in</a>';
+      } else {
+        $("title").textContent = "Welcome back";
+        $("subtitle").textContent = "Sign in to your research desk.";
+        $("submitBtn").textContent = "Sign in";
+        $("password").setAttribute("autocomplete", "current-password");
+        $("toggle").innerHTML = 'New here? <a id="toggleLink">Create an account</a>';
+      }
+      bindToggle();
+      clearMsg();
+    }
+
+    function bindToggle() {
+      $("toggleLink").onclick = function () {
+        setMode(mode === "signin" ? "signup" : "signin");
+      };
+    }
+
+    async function handleSubmit() {
+      clearMsg();
+      var email = $("email").value.trim();
+      var password = $("password").value;
+      if (!email || !password) { showMsg("Enter your email and password.", "err"); return; }
+      if (mode === "signup" && password.length < 6) { showMsg("Password must be at least 6 characters.", "err"); return; }
+
+      $("submitBtn").disabled = true;
+      $("submitBtn").textContent = mode === "signup" ? "Creating…" : "Signing in…";
+
+      try {
+        var res = mode === "signup"
+          ? await window.lidaAuth.signUp(email, password)
+          : await window.lidaAuth.signIn(email, password);
+
+        if (res.error) {
+          showMsg(res.error.message, "err");
+          $("submitBtn").disabled = false;
+          $("submitBtn").textContent = mode === "signup" ? "Create account" : "Sign in";
+          return;
+        }
+
+        // Signed up but no session => email confirmation is ON in Supabase.
+        if (mode === "signup" && res.data && !res.data.session) {
+          showMsg("Account created. Check your email to confirm, then sign in.", "ok");
+          $("submitBtn").disabled = false;
+          $("submitBtn").textContent = "Create account";
+          setMode("signin");
+          return;
+        }
+
+        // We have a session — success.
+        var dest = nextDest();
+        if (dest) { window.location.href = dest; return; }
+        showSignedIn(email);
+      } catch (e) {
+        showMsg("Something went wrong: " + (e.message || e), "err");
+        $("submitBtn").disabled = false;
+        $("submitBtn").textContent = mode === "signup" ? "Create account" : "Sign in";
+      }
+    }
+
+    // wire up
+    bindToggle();
+    $("submitBtn").onclick = handleSubmit;
+    $("password").addEventListener("keydown", function (e) { if (e.key === "Enter") handleSubmit(); });
+    $("signOutBtn") && ($("signOutBtn").onclick = async function () {
+      await window.lidaAuth.signOut();
+      window.location.reload();
+    });
+
+    // If already signed in, jump straight to the signed-in state.
+    window.lidaAuth.getSession().then(function (session) {
+      if (session && session.user) {
+        var dest = nextDest();
+        if (dest) { window.location.href = dest; return; }
+        showSignedIn(session.user.email);
+      }
+    });
+  </script>
+</body>
+</html>

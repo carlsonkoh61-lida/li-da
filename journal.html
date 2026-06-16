@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
 <style>
   :root {
     --bg:#0B0D14; --panel:rgba(20,24,38,0.66); --line:rgba(255,255,255,0.08);
@@ -127,6 +129,8 @@
   </div>
 
 <script>
+  // Require sign-in before the Journal loads.
+  (async function () { if (window.lidaAuth) { await window.lidaAuth.requireAuth(); } })();
   const listEl = document.getElementById("list");
   const summaryEl = document.getElementById("summary");
   const filterEl = document.getElementById("filterbar");
@@ -407,7 +411,8 @@
     out.innerHTML = `<div class="coach-loading">Li-Da is reviewing how you decide…</div>`;
     try {
       const pack = buildCoachPack();
-      const r = await fetch("/api/coach", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(pack) });
+      const _s = window.lidaAuth ? await window.lidaAuth.getSession() : null;
+      const r = await fetch("/api/coach", { method: "POST", headers: { "content-type": "application/json", Authorization: "Bearer " + (_s ? _s.access_token : "") }, body: JSON.stringify(pack) });
       const d = await r.json();
       if (!r.ok) out.innerHTML = `<div class="coach-err">${esc(d.error || "Couldn't get a read.")}</div>`;
       else renderCoach(d.coaching, out);

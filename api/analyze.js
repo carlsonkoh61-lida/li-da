@@ -340,7 +340,7 @@ export default async function handler(req, res) {
     const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "content-type": "application/json", "x-api-key": ANTHROPIC, "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1700, system: SYSTEM_PROMPT, messages: [{ role: "user", content: userContent }] }),
+      body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 2800, system: SYSTEM_PROMPT, messages: [{ role: "user", content: userContent }] }),
     });
 
     const aiData = await aiRes.json();

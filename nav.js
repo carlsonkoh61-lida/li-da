@@ -10,7 +10,7 @@
     { label: "Desk", href: "/research.html" },
     { label: "Journal", href: "/journal.html" },
     { label: "Tasks", href: "/lida-tasks.html" },
-    { label: "Second Thought", href: "/second-thought.html" },
+    
   ];
 
   function base(p) {

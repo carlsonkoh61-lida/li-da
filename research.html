@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
 <style>
   :root {
     --bg:         #0B0D14;
@@ -347,6 +349,8 @@
   </div>
 
 <script>
+  // Require sign-in before the Desk loads.
+  (async function () { if (window.lidaAuth) { await window.lidaAuth.requireAuth(); } })();
   const input = document.getElementById("symbol");
   const btn = document.getElementById("go");
   const out = document.getElementById("out");
@@ -926,7 +930,8 @@
     box.textContent = "Thinking through the read\u2026 (a few seconds)";
     out.appendChild(box);
     try {
-      const res = await fetch("/api/analyze?symbol=" + encodeURIComponent(sym));
+      const _s = window.lidaAuth ? await window.lidaAuth.getSession() : null;
+      const res = await fetch("/api/analyze?symbol=" + encodeURIComponent(sym), { headers: { Authorization: "Bearer " + (_s ? _s.access_token : "") } });
       const d = await res.json();
       if (!res.ok) {
         box.className = "read";

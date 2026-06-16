@@ -11,7 +11,7 @@ You receive: the latest quote, recent news, basic fundamentals, analyst recommen
 averages, distance off recent high/low), and a "hype" signal computed from the stock's OWN price history —
 whether it is currently running hot (extended above its 50-day average, overbought, or freshly spiked) plus a
 real base_rate: of the times this stock was in a similar state in the past, how often it was LOWER 20 trading
-days later, and the median move. You also receive "regime": the stock's current market regime (an overall label, its volatility state with the typical daily move, and its volume behavior).
+days later, and the median move. You also receive "regime": the stock's current market regime (an overall label, its volatility state with the typical daily move, and its volume behavior). You also receive "red_flags": objective warning signs computed from the fundamentals (losses, heavy debt, weak liquidity, shrinking revenue, stretched valuation), each with a severity.
 
 Rules:
 - Always give a real bear case, weighted equally with the bull case. Never hide the risks.
@@ -20,6 +20,7 @@ Rules:
 - Factor technicals in: note when price is stretched, oversold/overbought, below/above key averages. Treat RSI
   and moving averages as CONTEXT, never standalone buy/sell signals.
 - REGIME: factor the regime into your RISK framing. In high-volatility or choppy regimes, note that stops need more room, position size should be smaller, and whipsaws / failed breakouts are likelier; in calm trends, note conditions are more orderly. Reflect this in "levels", "stress_test", and "before_you_act". Describe how careful to be — do NOT prescribe a specific trading strategy to deploy. Decision-support, never a trade recommendation.
+- RED FLAGS: weight any red_flags in your bear case and stress_test — they are the concrete downside, straight from the numbers. If red_flags is empty, do NOT manufacture concerns; a clean balance sheet is a legitimate finding worth stating. These come only from financial metrics, not filings or accounting footnotes — never imply a full forensic audit.
 - HYPE HANDLING — this matters most. When hype.hot is true, your bear case and stress_test must bite HARDER:
   explicitly name the risk of chasing a stretched price, weight the downside, and let confidence reflect that
   buying into strength means buying high. When hype.hot is false, do NOT manufacture alarm — give a balanced read.
@@ -189,6 +190,36 @@ function computeRegime(closes, volumes, tech) {
   return { label, trend, volatility_state: volState, avg_daily_move_pct: round(avgDailyMove, 1), vol_vs_typical: round(ratio, 2), volume_state: volumeState, volume_vs_avg: round(vr, 2) };
 }
 
+function computeRedFlags(f) {
+  if (!f) return { flags: [], score: 0, count: 0 };
+  var flags = [];
+  function add(severity, label, detail) { flags.push({ severity: severity, label: label, detail: detail }); }
+
+  if (f.profitMargin != null && f.profitMargin < 0) add("high", "Unprofitable", "Net margin is " + f.profitMargin.toFixed(1) + "% \u2014 the business is losing money.");
+  else if (f.profitMargin != null && f.profitMargin < 2) add("medium", "Razor-thin margins", "Net margin is just " + f.profitMargin.toFixed(1) + "% \u2014 almost no cushion if costs rise.");
+  if (f.eps != null && f.eps < 0 && !(f.profitMargin != null && f.profitMargin < 0)) add("high", "Negative earnings", "EPS (TTM) is $" + f.eps.toFixed(2) + " \u2014 no trailing profit.");
+
+  if (f.debtToEquity != null) {
+    if (f.debtToEquity > 2.5) add("high", "Heavy debt load", "Debt/equity is " + f.debtToEquity.toFixed(2) + " \u2014 heavily leveraged.");
+    else if (f.debtToEquity > 1.5) add("medium", "Elevated debt", "Debt/equity is " + f.debtToEquity.toFixed(2) + " \u2014 above a comfortable level.");
+  }
+  if (f.currentRatio != null) {
+    if (f.currentRatio < 1) add("high", "Liquidity strain", "Current ratio is " + f.currentRatio.toFixed(2) + " \u2014 short-term obligations exceed short-term assets.");
+    else if (f.currentRatio < 1.2) add("medium", "Tight liquidity", "Current ratio is " + f.currentRatio.toFixed(2) + " \u2014 limited short-term cushion.");
+  }
+  if (f.revGrowth != null && f.revGrowth < 0) add(f.revGrowth < -10 ? "high" : "medium", "Shrinking revenue", "Revenue is down " + Math.abs(f.revGrowth).toFixed(1) + "% year over year.");
+
+  if (f.pe != null && f.eps != null && f.eps > 0) {
+    if (f.pe > 100) add("high", "Extreme valuation", "P/E of " + f.pe.toFixed(0) + " prices in flawless execution for years.");
+    else if (f.pe > 60) add("medium", "Priced for perfection", "P/E of " + f.pe.toFixed(0) + " leaves little room for disappointment.");
+  }
+  if (f.beta != null && f.beta > 2) add("low", "High volatility", "Beta of " + f.beta.toFixed(2) + " \u2014 swings far more than the market.");
+
+  var wt = { high: 3, medium: 2, low: 1 };
+  var score = Math.min(10, flags.reduce(function (sum, x) { return sum + (wt[x.severity] || 0); }, 0));
+  return { flags: flags, score: score, count: flags.length };
+}
+
 export default async function handler(req, res) {
   const symbol = (req.query.symbol || "").toUpperCase().trim();
   if (!symbol) return res.status(400).json({ error: "Add a symbol, e.g. /api/analyze?symbol=AAPL" });
@@ -245,6 +276,7 @@ export default async function handler(req, res) {
       debtToEquity: pick(m["totalDebt/totalEquityQuarterly"]), currentRatio: pick(m.currentRatioQuarterly),
       eps: pick(m.epsTTM), beta: pick(m.beta),
     };
+    const redFlags = computeRedFlags(figures);
 
     const rr = Array.isArray(recRaw) && recRaw.length ? recRaw[0] : null;
     const analyst = rr ? { strongBuy: rr.strongBuy || 0, buy: rr.buy || 0, hold: rr.hold || 0, sell: rr.sell || 0, strongSell: rr.strongSell || 0, period: rr.period || "" } : null;
@@ -269,7 +301,7 @@ export default async function handler(req, res) {
       price: quote.c, change: quote.d, percent: quote.dp, open: quote.o, prevClose: quote.pc, dayHigh: quote.h, dayLow: quote.l,
       fundamentals: figures, analyst,
       peers: peers.map((p) => ({ symbol: p.symbol, pe: p.pe, margin: p.margin })),
-      technicals, hype, regime,
+      technicals, hype, regime, red_flags: redFlags,
       recent_news: news.map((n) => ({ headline: n.headline, summary: n.summary })),
     };
 
@@ -290,7 +322,7 @@ export default async function handler(req, res) {
     let read;
     try { read = JSON.parse(text); } catch (e) { return res.status(502).json({ error: "Claude's reply wasn't in the expected format. Try again." }); }
 
-    return res.status(200).json({ symbol, read, news, figures, analyst, peers, technicals, hype, regime });
+    return res.status(200).json({ symbol, read, news, figures, analyst, peers, technicals, hype, regime, redFlags });
   } catch (err) {
     return res.status(500).json({ error: "Something went wrong running the read. Try again in a moment." });
   }

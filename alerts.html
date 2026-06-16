@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Li-Da · Alerts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<style>
+  :root {
+    --bg: #0B0D14; --panel: #12141D; --panel2: #0E1018;
+    --line: rgba(255,255,255,0.08); --paper: #ECECF1; --muted: #8A8F9E;
+    --brand: #8576FF; --up: #4ADE9A; --down: #FF6B6B; --amber: #F5B870;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--paper);
+    font-family: "Inter", system-ui, sans-serif;
+    min-height: 100vh; padding: 90px 20px 60px; position: relative; overflow-x: hidden;
+  }
+  body::before {
+    content: ""; position: fixed; inset: -30%;
+    background: radial-gradient(55% 45% at 30% 18%, rgba(133,118,255,0.08), transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .wrap { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; }
+
+  .eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.22em; color: var(--muted); text-align: center; margin-bottom: 8px; }
+  h1 { font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 30px; text-align: center; margin: 0 0 6px;
+    background: linear-gradient(90deg, #ECECF1, #C9BEFF); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .sub { color: var(--muted); font-size: 14px; text-align: center; margin: 0 0 26px; line-height: 1.5; }
+
+  /* create card */
+  .create { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 30px; }
+  .fld { margin-bottom: 14px; }
+  .fld label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.02em; }
+  .fld input {
+    width: 100%; background: var(--panel2); color: var(--paper); border: 1px solid var(--line);
+    border-radius: 11px; padding: 12px 13px; font-size: 15px; outline: none; transition: border-color 0.15s;
+  }
+  .fld input:focus { border-color: rgba(133,118,255,0.6); }
+  .fld input.mono { font-family: "IBM Plex Mono", monospace; letter-spacing: 0.04em; }
+  #a-sym { text-transform: uppercase; }
+  #a-sym::placeholder { text-transform: none; }
+  .two { display: flex; gap: 12px; }
+  .two > .fld { flex: 1; }
+
+  .seg { display: flex; background: var(--panel2); border: 1px solid var(--line); border-radius: 11px; overflow: hidden; }
+  .seg button {
+    flex: 1; background: transparent; border: none; color: var(--muted); padding: 12px;
+    font-size: 14px; font-weight: 500; font-family: "Inter", sans-serif; cursor: pointer; transition: all 0.15s;
+  }
+  .seg button.active.above { background: rgba(74,222,154,0.14); color: var(--up); }
+  .seg button.active.below { background: rgba(255,107,107,0.14); color: var(--down); }
+
+  .setbtn {
+    width: 100%; background: var(--brand); color: #0B0D14; border: none; border-radius: 11px;
+    padding: 13px; font-size: 15px; font-weight: 600; font-family: "Space Grotesk", sans-serif;
+    cursor: pointer; transition: opacity 0.15s; margin-top: 4px;
+  }
+  .setbtn:hover { opacity: 0.9; } .setbtn:disabled { opacity: 0.5; cursor: default; }
+  .cmsg { font-size: 12.5px; margin-top: 10px; min-height: 16px; text-align: center; }
+  .cmsg.err { color: var(--down); } .cmsg.ok { color: var(--up); }
+
+  .preview { text-align: center; font-size: 13px; color: var(--muted); margin: 2px 0 14px; min-height: 18px; }
+  .preview b { color: var(--paper); font-family: "IBM Plex Mono", monospace; }
+
+  .sectitle { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.18em; color: var(--muted); text-transform: uppercase; margin: 6px 2px 12px; }
+  .list { display: flex; flex-direction: column; gap: 11px; margin-bottom: 26px; }
+
+  .al { display: flex; align-items: center; gap: 13px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .al.fired { opacity: 0.72; }
+  .al .body { flex: 1; min-width: 0; }
+  .al .top { font-size: 14.5px; }
+  .al .top .sym { font-family: "IBM Plex Mono", monospace; font-weight: 600; letter-spacing: 0.04em; }
+  .al .top .cond .dir { font-weight: 600; }
+  .al .top .cond .dir.above { color: var(--up); } .al .top .cond .dir.below { color: var(--down); }
+  .al .top .cond .px { font-family: "IBM Plex Mono", monospace; color: var(--paper); }
+  .al .meta { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+  .al .meta .now { font-family: "IBM Plex Mono", monospace; }
+  .al .note { font-style: italic; }
+  .al .fired-tag { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--amber); }
+  .rm { background: transparent; border: none; color: #4A4F60; cursor: pointer; font-size: 19px; line-height: 1; padding: 4px 6px; border-radius: 8px; transition: color 0.15s; }
+  .rm:hover { color: var(--down); }
+
+  .empty { text-align: center; color: var(--muted); font-size: 14px; line-height: 1.6; padding: 34px 20px; border: 1px dashed var(--line); border-radius: 14px; }
+  .foot { text-align: center; color: #5A6072; font-size: 11.5px; margin-top: 10px; line-height: 1.6; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="eyebrow">LI-DA · ALERTS</div>
+    <h1>Set a level.</h1>
+    <p class="sub">Decide your price <i>in advance</i> — your entry, your stop, your target.<br>Li-Da watches and tells you when it's reached. Discipline, not FOMO.</p>
+
+    <div class="create">
+      <div class="fld">
+        <label for="a-sym">Ticker</label>
+        <input id="a-sym" class="mono" type="text" placeholder="e.g. NVDA" maxlength="12" autocomplete="off" />
+      </div>
+      <div class="two">
+        <div class="fld">
+          <label>When price goes</label>
+          <div class="seg" id="a-dir">
+            <button type="button" class="above active" data-d="above">Above ▲</button>
+            <button type="button" class="below" data-d="below">Below ▼</button>
+          </div>
+        </div>
+        <div class="fld">
+          <label for="a-price">This price ($)</label>
+          <input id="a-price" class="mono" type="number" step="0.01" placeholder="180.00" />
+        </div>
+      </div>
+      <div class="fld">
+        <label for="a-note">Your reason (optional)</label>
+        <input id="a-note" type="text" placeholder="e.g. my planned entry" maxlength="120" />
+      </div>
+      <div class="preview" id="preview"></div>
+      <button class="setbtn" id="a-set">Set alert</button>
+      <div class="cmsg" id="cmsg"></div>
+    </div>
+
+    <div id="activeWrap">
+      <div class="sectitle">Active alerts</div>
+      <div class="list" id="activeList"><div class="empty">Loading…</div></div>
+    </div>
+
+    <div id="firedWrap" style="display:none">
+      <div class="sectitle">Recently fired</div>
+      <div class="list" id="firedList"></div>
+    </div>
+
+    <p class="foot">Alerts are checked every few minutes once the notifier is live (next step).
+      Prices shown are live quotes. You set the level with intention — Li-Da just keeps watch.</p>
+  </div>
+
+  <script src="/nav.js" defer></script>
+  <script>
+    var $ = function (id) { return document.getElementById(id); };
+    var client = null, userEmail = null, curDir = "above";
+    var symEl = $("a-sym"), priceEl = $("a-price"), noteEl = $("a-note");
+    var activeList = $("activeList"), firedList = $("firedList"), firedWrap = $("firedWrap");
+
+    function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];}); }
+    function cssEsc(s){ return String(s).replace(/["\\]/g,"\\$&"); }
+    function money(n){ return "$" + Number(n).toFixed(2); }
+
+    function updatePreview() {
+      var sym = symEl.value.trim().toUpperCase();
+      var px = parseFloat(priceEl.value);
+      if (!sym || isNaN(px)) { $("preview").innerHTML = ""; return; }
+      $("preview").innerHTML = "Alert me when <b>" + esc(sym) + "</b> goes " + curDir + " <b>" + money(px) + "</b>.";
+    }
+
+    function alHtml(a, fired) {
+      var dirTxt = a.direction === "above" ? "above" : "below";
+      var noteHtml = a.note ? ' · <span class="note">' + esc(a.note) + '</span>' : "";
+      if (fired) {
+        var when = a.triggered_at ? new Date(a.triggered_at).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "";
+        return '<div class="al fired" data-id="'+esc(a.id)+'">' +
+          '<div class="body"><div class="top"><span class="sym">'+esc(a.symbol)+'</span> ' +
+          '<span class="cond">went <span class="dir '+a.direction+'">'+dirTxt+'</span> <span class="px">'+money(a.threshold)+'</span></span></div>' +
+          '<div class="meta"><span class="fired-tag">✓ fired'+(a.triggered_price!=null?" at "+money(a.triggered_price):"")+(when?" · "+when:"")+'</span>'+noteHtml+'</div></div>' +
+          '<button class="rm" data-rm="'+esc(a.id)+'" title="Delete">×</button></div>';
+      }
+      return '<div class="al" data-id="'+esc(a.id)+'" data-sym="'+esc(a.symbol)+'" data-dir="'+a.direction+'" data-thr="'+esc(a.threshold)+'">' +
+        '<div class="body"><div class="top"><span class="sym">'+esc(a.symbol)+'</span> ' +
+        '<span class="cond">when price goes <span class="dir '+a.direction+'">'+dirTxt+'</span> <span class="px">'+money(a.threshold)+'</span></span></div>' +
+        '<div class="meta"><span class="now" data-now>checking price…</span>'+noteHtml+'</div></div>' +
+        '<button class="rm" data-rm="'+esc(a.id)+'" title="Delete">×</button></div>';
+    }
+
+    async function loadPrice(symbol) {
+      try {
+        var res = await fetch("/api/market?symbol=" + encodeURIComponent(symbol));
+        var d = await res.json();
+        if (!res.ok || d.price == null) return;
+        document.querySelectorAll('.al[data-sym="'+cssEsc(symbol)+'"]').forEach(function (el) {
+          var thr = parseFloat(el.getAttribute("data-thr"));
+          var nowEl = el.querySelector("[data-now]");
+          if (!nowEl) return;
+          var gap = ((thr - d.price) / d.price) * 100;
+          var awayTxt = Math.abs(gap).toFixed(1) + "% away";
+          nowEl.innerHTML = "now " + money(d.price) + " · " + awayTxt;
+        });
+      } catch (e) {}
+    }
+
+    function wireRemoves(container) {
+      container.querySelectorAll("[data-rm]").forEach(function (b) {
+        b.addEventListener("click", function () { removeAlert(b.getAttribute("data-rm")); });
+      });
+    }
+
+    async function loadAlerts() {
+      var r = await client.from("alerts").select("*").order("created_at", { ascending: false });
+      if (r.error) { activeList.innerHTML = '<div class="empty">Couldn\'t load alerts: '+esc(r.error.message)+'</div>'; return; }
+      var rows = r.data || [];
+      var active = rows.filter(function (a) { return a.status === "active"; });
+      var fired = rows.filter(function (a) { return a.status === "triggered"; });
+
+      if (!active.length) activeList.innerHTML = '<div class="empty">No active alerts yet. Set your first level above.</div>';
+      else { activeList.innerHTML = active.map(function(a){return alHtml(a,false);}).join(""); wireRemoves(activeList); }
+
+      if (fired.length) {
+        firedWrap.style.display = "block";
+        firedList.innerHTML = fired.map(function(a){return alHtml(a,true);}).join("");
+        wireRemoves(firedList);
+      } else { firedWrap.style.display = "none"; }
+
+      var syms = [...new Set(active.map(function(a){return a.symbol;}))];
+      syms.forEach(loadPrice);
+    }
+
+    async function setAlert() {
+      var msg = $("cmsg"); msg.className = "cmsg"; msg.textContent = "";
+      var sym = symEl.value.trim().toUpperCase().replace(/[^A-Z0-9.\-]/g,"");
+      var thr = parseFloat(priceEl.value);
+      var note = noteEl.value.trim();
+      if (!sym) { msg.className="cmsg err"; msg.textContent="Enter a ticker."; return; }
+      if (isNaN(thr) || thr <= 0) { msg.className="cmsg err"; msg.textContent="Enter a valid price."; return; }
+      var btn = $("a-set"); btn.disabled = true; btn.textContent = "Setting…";
+      try {
+        var r = await client.from("alerts").insert({
+          symbol: sym, direction: curDir, threshold: thr, note: note || null, email: userEmail
+        }).select();
+        if (r.error) { msg.className="cmsg err"; msg.textContent = r.error.message || "Couldn't set alert."; return; }
+        msg.className="cmsg ok"; msg.textContent = "Alert set ✓";
+        priceEl.value = ""; noteEl.value = ""; updatePreview();
+        setTimeout(function(){ msg.textContent=""; msg.className="cmsg"; }, 2000);
+        loadAlerts();
+      } catch (e) {
+        msg.className="cmsg err"; msg.textContent = "Something went wrong. Try again.";
+      } finally { btn.disabled = false; btn.textContent = "Set alert"; }
+    }
+
+    async function removeAlert(id) {
+      try {
+        var r = await client.from("alerts").delete().eq("id", id);
+        if (r.error) return;
+        var el = document.querySelector('.al[data-id="'+cssEsc(id)+'"]');
+        if (el) el.remove();
+        if (!activeList.querySelector(".al")) activeList.innerHTML = '<div class="empty">No active alerts yet. Set your first level above.</div>';
+        if (firedList && !firedList.querySelector(".al")) firedWrap.style.display = "none";
+      } catch (e) {}
+    }
+
+    function wire() {
+      $("a-dir").querySelectorAll("button").forEach(function (b) {
+        b.addEventListener("click", function () {
+          $("a-dir").querySelectorAll("button").forEach(function(x){x.classList.remove("active");});
+          b.classList.add("active"); curDir = b.getAttribute("data-d"); updatePreview();
+        });
+      });
+      symEl.addEventListener("input", updatePreview);
+      priceEl.addEventListener("input", updatePreview);
+      $("a-set").addEventListener("click", setAlert);
+      priceEl.addEventListener("keydown", function(e){ if (e.key === "Enter") setAlert(); });
+    }
+
+    (async function () {
+      if (!window.lidaAuth) { activeList.innerHTML = '<div class="empty">Please sign in.</div>'; return; }
+      var user = await window.lidaAuth.requireAuth();
+      if (!user) return;
+      client = window.lidaAuth.client; userEmail = user.email;
+      var qp = new URLSearchParams(location.search).get("symbol");
+      if (qp) symEl.value = qp.toUpperCase();
+      wire(); updatePreview(); loadAlerts();
+    })();
+  </script>
+</body>
+</html>

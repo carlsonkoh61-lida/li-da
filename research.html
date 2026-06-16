@@ -652,25 +652,27 @@
     if (!ctx) return;
     const activeBtn = document.querySelector("#decision button.active");
     const decision = activeBtn ? activeBtn.dataset.v : null;
-    const payload = {
-      symbol: ctx.symbol, price: ctx.price,
-      ai_lean: ctx.read && ctx.read.lean,
-      ai_confidence: ctx.read && ctx.read.confidence,
-      ai_summary: ctx.read && ctx.read.summary,
-      decision,
-      entry: document.getElementById("f-entry").value,
-      stop_loss: document.getElementById("f-stop").value,
-      take_profit: document.getElementById("f-target").value,
-      reasoning: document.getElementById("f-reason").value,
+    const num = (v) => (v === "" || v == null || isNaN(Number(v)) ? null : Number(v));
+    const row = {
+      symbol: String(ctx.symbol).toUpperCase().slice(0, 12),
+      price_at_log: num(ctx.price),
+      ai_lean: (ctx.read && ctx.read.lean) || null,
+      ai_confidence: (ctx.read && ctx.read.confidence) || null,
+      ai_summary: (ctx.read && ctx.read.summary) || null,
+      decision: decision || null,
+      entry: num(document.getElementById("f-entry").value),
+      stop_loss: num(document.getElementById("f-stop").value),
+      take_profit: num(document.getElementById("f-target").value),
+      reasoning: (document.getElementById("f-reason").value || "").slice(0, 2000) || null,
     };
     const msg = document.getElementById("logmsg");
     const b = document.getElementById("logbtn");
     b.disabled = true; b.textContent = "Saving…"; msg.textContent = ""; msg.className = "logmsg";
     try {
-      const r = await fetch("/api/log", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      const d = await r.json();
-      if (!r.ok) { msg.className = "logmsg err"; msg.textContent = d.error || "Couldn't save."; b.disabled = false; b.textContent = "Log to journal"; return; }
-      const s = d.saved || {};
+      if (!window.lidaAuth) throw new Error("not signed in");
+      const { data, error } = await window.lidaAuth.client.from("research_log").insert(row).select();
+      if (error) { msg.className = "logmsg err"; msg.textContent = error.message || "Couldn't save."; b.disabled = false; b.textContent = "Log to journal"; return; }
+      const s = (Array.isArray(data) && data[0]) || {};
       const bits = [];
       if (s.stop_loss != null) bits.push("stop " + money(s.stop_loss));
       if (s.take_profit != null) bits.push("target " + money(s.take_profit));
@@ -917,9 +919,13 @@
   async function getChart(sym) {
     chartSym = sym; chartLogs = [];
     try {
-      const r = await fetch("/api/logs?symbol=" + encodeURIComponent(sym));
-      const d = await r.json();
-      if (r.ok && Array.isArray(d.rows)) chartLogs = d.rows;
+      if (window.lidaAuth) {
+        const { data, error } = await window.lidaAuth.client
+          .from("research_log").select("*")
+          .eq("symbol", String(sym).toUpperCase())
+          .order("created_at", { ascending: false });
+        if (!error && Array.isArray(data)) chartLogs = data;
+      }
     } catch (e) { chartLogs = []; }
     loadChart(sym, chartRange);
   }

@@ -439,10 +439,12 @@
 
   async function init() {
     try {
-      const r = await fetch("/api/logs");
-      const d = await r.json();
-      if (!r.ok) { listEl.innerHTML = `<div class="error">${esc(d.error || "Couldn't load journal.")}</div>`; return; }
-      allRows = d.rows || [];
+      if (!window.lidaAuth) { listEl.innerHTML = `<div class="error">Please sign in to view your journal.</div>`; return; }
+      const { data, error } = await window.lidaAuth.client
+        .from("research_log").select("*")
+        .order("created_at", { ascending: false }).limit(200);
+      if (error) { listEl.innerHTML = `<div class="error">${esc(error.message || "Couldn't load journal.")}</div>`; return; }
+      allRows = data || [];
       if (!allRows.length) {
         summaryEl.innerHTML = "";
         listEl.innerHTML = `<div class="empty">No calls logged yet. Pull a read on the desk and log your first decision.</div>`;

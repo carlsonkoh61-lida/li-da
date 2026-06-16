@@ -246,7 +246,25 @@ function buildEarnings(histRaw, calRaw) {
   return out;
 }
 
+async function verifyUser(req) {
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const ANON = process.env.SUPABASE_ANON_KEY;
+  if (!SUPABASE_URL || !ANON) return { ok: false, code: 500, msg: "Server auth isn't configured (SUPABASE_URL / SUPABASE_ANON_KEY)." };
+  const h = req.headers.authorization || req.headers.Authorization || "";
+  const token = String(h).replace(/^Bearer\s+/i, "").trim();
+  if (!token) return { ok: false, code: 401, msg: "Please sign in to use this." };
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { Authorization: `Bearer ${token}`, apikey: ANON } });
+    if (!r.ok) return { ok: false, code: 401, msg: "Your session expired \u2014 please sign in again." };
+    return { ok: true, user: await r.json() };
+  } catch (e) {
+    return { ok: false, code: 401, msg: "Couldn't verify your session \u2014 please sign in again." };
+  }
+}
+
 export default async function handler(req, res) {
+  const _auth = await verifyUser(req);
+  if (!_auth.ok) return res.status(_auth.code).json({ error: _auth.msg });
   const symbol = (req.query.symbol || "").toUpperCase().trim();
   if (!symbol) return res.status(400).json({ error: "Add a symbol, e.g. /api/analyze?symbol=AAPL" });
 

@@ -215,6 +215,19 @@
   .chart-loading { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 14px; padding: 40px 0; text-align: center; }
   .chart-empty { color: var(--muted); font-size: 14px; padding: 30px 0; text-align: center; }
 
+  /* ---- red flags ---- */
+  .rf-count { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--down); border: 1px solid rgba(255,107,107,0.4); border-radius: 999px; padding: 1px 8px; margin-left: 8px; }
+  .rf-list { display: flex; flex-direction: column; gap: 11px; }
+  .rf-item { display: flex; gap: 10px; align-items: flex-start; }
+  .rf-sev { font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; margin-top: 1px; }
+  .rf-sev.high { color: var(--down); border-color: rgba(255,107,107,0.5); }
+  .rf-sev.medium { color: #F5B870; border-color: rgba(245,184,112,0.5); }
+  .rf-sev.low { color: var(--muted); }
+  .rf-label { font-size: 14px; font-weight: 500; }
+  .rf-detail { color: var(--muted); font-size: 13px; line-height: 1.5; margin-top: 2px; }
+  .rf-caveat { color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 13px; font-style: italic; }
+  .rf-clear { color: var(--up); font-size: 14px; line-height: 1.5; }
+
   /* ---- technicals ---- */
   .tech-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
   .tchip { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
@@ -445,6 +458,31 @@
       peersHtml = `<div class="block"><div class="lab">Versus peers</div><p class="empty">${esc(pt.detail)}</p></div>`;
     }
 
+    // red flags (objective warning signs from the fundamentals)
+    const rf = d.redFlags || null;
+    let rfHtml = "";
+    if (rf) {
+      if (rf.flags && rf.flags.length) {
+        const items = rf.flags.map((fl) => `
+          <div class="rf-item">
+            <span class="rf-sev ${esc(fl.severity)}">${esc(fl.severity)}</span>
+            <div class="rf-body"><div class="rf-label">${esc(fl.label)}</div><div class="rf-detail">${esc(fl.detail)}</div></div>
+          </div>`).join("");
+        rfHtml = `
+          <div class="block">
+            <div class="lab">Red flags <span class="rf-count">${rf.flags.length}</span></div>
+            <div class="rf-list">${items}</div>
+            <p class="rf-caveat">From the financial metrics available — not a full forensic audit (no filings, accounting footnotes, or legal review).</p>
+          </div>`;
+      } else {
+        rfHtml = `
+          <div class="block">
+            <div class="lab">Red flags</div>
+            <p class="rf-clear">No major red flags in the available financials — based on the metrics only, not a full audit.</p>
+          </div>`;
+      }
+    }
+
     // technicals snapshot (the trend Li-Da now reads)
     const t = d.technicals || null;
     let techHtml = "";
@@ -525,7 +563,7 @@
         <details class="sources"><summary>Sources (${news.length})</summary><div class="news">${sourceItems}</div></details>
       </div>`;
 
-    return `<div class="evidence show"><h3>What it read</h3>${figsHtml}${techHtml}${regimeHtml}${peersHtml}${analystHtml}${newsHtml}</div>`;
+    return `<div class="evidence show"><h3>What it read</h3>${figsHtml}${rfHtml}${techHtml}${regimeHtml}${peersHtml}${analystHtml}${newsHtml}</div>`;
   }
 
   function renderMove() {

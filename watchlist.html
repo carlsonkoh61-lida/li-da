@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Li-Da · Watchlist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<style>
+  :root {
+    --bg: #0B0D14; --panel: #12141D; --panel2: #0E1018;
+    --line: rgba(255,255,255,0.08); --paper: #ECECF1; --muted: #8A8F9E;
+    --brand: #8576FF; --up: #4ADE9A; --down: #FF6B6B; --amber: #F5B870;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--paper);
+    font-family: "Inter", system-ui, sans-serif;
+    min-height: 100vh; padding: 90px 20px 60px;
+    position: relative; overflow-x: hidden;
+  }
+  body::before {
+    content: ""; position: fixed; inset: -30%;
+    background: radial-gradient(55% 45% at 70% 20%, rgba(133,118,255,0.08), transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .wrap { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.22em;
+    color: var(--muted); text-align: center; margin-bottom: 8px;
+  }
+  h1 {
+    font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 30px;
+    text-align: center; margin: 0 0 6px;
+    background: linear-gradient(90deg, #ECECF1, #C9BEFF); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .sub { color: var(--muted); font-size: 14px; text-align: center; margin: 0 0 26px; }
+
+  .addrow { display: flex; gap: 10px; margin-bottom: 22px; }
+  .addrow input {
+    flex: 1; background: var(--panel2); color: var(--paper);
+    border: 1px solid var(--line); border-radius: 12px; padding: 13px 15px;
+    font-size: 15px; font-family: "IBM Plex Mono", monospace; letter-spacing: 0.04em;
+    text-transform: uppercase; outline: none; transition: border-color 0.15s;
+  }
+  .addrow input::placeholder { font-family: "Inter", sans-serif; text-transform: none; letter-spacing: 0; color: #595F70; }
+  .addrow input:focus { border-color: rgba(133,118,255,0.6); }
+  .addrow button {
+    background: var(--brand); color: #0B0D14; border: none; border-radius: 12px;
+    padding: 0 22px; font-size: 15px; font-weight: 600; font-family: "Space Grotesk", sans-serif;
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  .addrow button:hover { opacity: 0.9; }
+  .addrow button:disabled { opacity: 0.5; cursor: default; }
+
+  .addmsg { font-size: 12.5px; margin: -14px 2px 18px; min-height: 16px; }
+  .addmsg.err { color: var(--down); }
+  .addmsg.ok { color: var(--up); }
+
+  .list { display: flex; flex-direction: column; gap: 11px; }
+
+  .row {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 15px 16px; text-decoration: none; color: inherit;
+    transition: border-color 0.15s, transform 0.1s; cursor: pointer;
+  }
+  .row:hover { border-color: rgba(133,118,255,0.4); transform: translateY(-1px); }
+
+  .tk { min-width: 0; flex: 1; }
+  .tk .sym { font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 16px; letter-spacing: 0.04em; }
+  .tk .nm { color: var(--muted); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+
+  .pr { text-align: right; min-width: 96px; }
+  .pr .px { font-family: "IBM Plex Mono", monospace; font-size: 15px; font-weight: 500; }
+  .pr .ch { font-family: "IBM Plex Mono", monospace; font-size: 12px; margin-top: 2px; }
+  .pr .ch.up { color: var(--up); } .pr .ch.down { color: var(--down); } .pr .ch.flat { color: var(--muted); }
+  .pr .px.loading { color: #4A4F60; font-size: 12px; font-family: "Inter", sans-serif; }
+
+  .lean {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.04em;
+    padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line);
+    white-space: nowrap; min-width: 78px; text-align: center;
+  }
+  .lean.up { color: var(--up); border-color: rgba(74,222,154,0.4); }
+  .lean.down { color: var(--down); border-color: rgba(255,107,107,0.4); }
+  .lean.neutral { color: var(--amber); border-color: rgba(245,184,112,0.35); }
+  .lean.none { color: #5A6072; }
+
+  .rm {
+    background: transparent; border: none; color: #4A4F60; cursor: pointer;
+    font-size: 19px; line-height: 1; padding: 4px 6px; border-radius: 8px; transition: color 0.15s;
+  }
+  .rm:hover { color: var(--down); }
+
+  .empty, .loading-all {
+    text-align: center; color: var(--muted); font-size: 14px; line-height: 1.6;
+    padding: 40px 20px; border: 1px dashed var(--line); border-radius: 14px;
+  }
+  .foot { text-align: center; color: #5A6072; font-size: 11.5px; margin-top: 24px; line-height: 1.6; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="eyebrow">LI-DA · WATCHLIST</div>
+    <h1>Your watch.</h1>
+    <p class="sub">The stocks you're tracking — price, today's move, and Li-Da's last read.</p>
+
+    <div class="addrow">
+      <input id="addInput" type="text" placeholder="Add a ticker, e.g. NVDA" maxlength="12" autocomplete="off" />
+      <button id="addBtn">Add</button>
+    </div>
+    <div class="addmsg" id="addMsg"></div>
+
+    <div class="list" id="list">
+      <div class="loading-all">Loading your watchlist…</div>
+    </div>
+
+    <p class="foot">Prices are live quotes. "Last read" is the lean from the last time you logged this ticker —
+      tap any row to pull a fresh read on the Desk.</p>
+  </div>
+
+  <script src="/nav.js" defer></script>
+  <script>
+    var $ = function (id) { return document.getElementById(id); };
+    var listEl = $("list"), addInput = $("addInput"), addBtn = $("addBtn"), addMsg = $("addMsg");
+    var leanMap = {};   // symbol -> last logged lean
+    var client = null;
+
+    function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]; }); }
+
+    function leanClass(lean) {
+      if (!lean) return "none";
+      var l = String(lean).toLowerCase();
+      if (l.indexOf("buy") >= 0 || l.indexOf("bull") >= 0) return "up";
+      if (l.indexOf("sell") >= 0 || l.indexOf("bear") >= 0) return "down";
+      return "neutral";
+    }
+    function leanLabel(lean) {
+      if (!lean) return "tap to read";
+      var s = String(lean);
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+    function money(n) { return "$" + Number(n).toFixed(2); }
+
+    function rowHtml(symbol) {
+      var lean = leanMap[symbol];
+      var lc = leanClass(lean), ll = leanLabel(lean);
+      return '' +
+        '<a class="row" href="/research.html?symbol=' + encodeURIComponent(symbol) + '" data-sym="' + esc(symbol) + '">' +
+          '<div class="tk"><div class="sym">' + esc(symbol) + '</div><div class="nm" data-nm></div></div>' +
+          '<div class="pr"><div class="px loading" data-px>—</div><div class="ch flat" data-ch></div></div>' +
+          '<div class="lean ' + lc + '">' + esc(ll) + '</div>' +
+          '<button class="rm" title="Remove" data-rm="' + esc(symbol) + '">×</button>' +
+        '</a>';
+    }
+
+    async function loadPrice(symbol) {
+      try {
+        var res = await fetch("/api/market?symbol=" + encodeURIComponent(symbol));
+        var d = await res.json();
+        var rowEl = listEl.querySelector('.row[data-sym="' + cssEsc(symbol) + '"]');
+        if (!rowEl) return;
+        var pxEl = rowEl.querySelector("[data-px]"), chEl = rowEl.querySelector("[data-ch]"), nmEl = rowEl.querySelector("[data-nm]");
+        if (!res.ok || d.price == null) { pxEl.textContent = "no data"; pxEl.className = "px loading"; return; }
+        pxEl.textContent = money(d.price); pxEl.className = "px";
+        if (nmEl && d.name) nmEl.textContent = d.name;
+        var pct = d.percent;
+        if (pct != null) {
+          var dir = pct > 0 ? "up" : pct < 0 ? "down" : "flat";
+          chEl.className = "ch " + dir;
+          chEl.textContent = (pct > 0 ? "▲ +" : pct < 0 ? "▼ " : "") + Number(pct).toFixed(2) + "%";
+        }
+      } catch (e) { /* leave as-is */ }
+    }
+    // basic CSS attr escape for the selector
+    function cssEsc(s) { return String(s).replace(/["\\]/g, "\\$&"); }
+
+    async function loadLeans() {
+      try {
+        var r = await client.from("research_log")
+          .select("symbol, ai_lean, created_at")
+          .order("created_at", { ascending: false });
+        if (r.error || !Array.isArray(r.data)) return;
+        // first (most recent) lean per symbol
+        r.data.forEach(function (row) {
+          if (row && row.symbol && !(row.symbol in leanMap)) leanMap[row.symbol] = row.ai_lean || null;
+        });
+      } catch (e) {}
+    }
+
+    async function render(symbols) {
+      if (!symbols.length) {
+        listEl.innerHTML = '<div class="empty">No tickers yet.<br>Add one above, or pull a read on the Desk and come back.</div>';
+        return;
+      }
+      listEl.innerHTML = symbols.map(rowHtml).join("");
+      // wire remove buttons
+      listEl.querySelectorAll("[data-rm]").forEach(function (b) {
+        b.addEventListener("click", function (e) {
+          e.preventDefault(); e.stopPropagation();
+          removeTicker(b.getAttribute("data-rm"));
+        });
+      });
+      // fetch prices in parallel
+      symbols.forEach(loadPrice);
+    }
+
+    async function loadAll() {
+      var wl = await client.from("watchlist").select("symbol, created_at").order("created_at", { ascending: true });
+      if (wl.error) { listEl.innerHTML = '<div class="empty">Couldn\'t load your watchlist: ' + esc(wl.error.message) + '</div>'; return; }
+      var symbols = (wl.data || []).map(function (x) { return x.symbol; });
+      await loadLeans();
+      render(symbols);
+    }
+
+    async function addTicker() {
+      var sym = addInput.value.trim().toUpperCase().replace(/[^A-Z0-9.\-]/g, "");
+      addMsg.className = "addmsg"; addMsg.textContent = "";
+      if (!sym) { addInput.focus(); return; }
+      addBtn.disabled = true; addBtn.textContent = "…";
+      try {
+        var r = await client.from("watchlist").insert({ symbol: sym }).select();
+        if (r.error) {
+          if (r.error.code === "23505" || /duplicate|unique/i.test(r.error.message || "")) {
+            addMsg.className = "addmsg err"; addMsg.textContent = sym + " is already on your list.";
+          } else {
+            addMsg.className = "addmsg err"; addMsg.textContent = r.error.message || "Couldn't add that.";
+          }
+          return;
+        }
+        addInput.value = "";
+        addMsg.className = "addmsg ok"; addMsg.textContent = sym + " added.";
+        setTimeout(function () { addMsg.textContent = ""; addMsg.className = "addmsg"; }, 2000);
+        await loadAll();
+      } catch (e) {
+        addMsg.className = "addmsg err"; addMsg.textContent = "Something went wrong. Try again.";
+      } finally {
+        addBtn.disabled = false; addBtn.textContent = "Add";
+      }
+    }
+
+    async function removeTicker(sym) {
+      try {
+        var r = await client.from("watchlist").delete().eq("symbol", sym);
+        if (r.error) { addMsg.className = "addmsg err"; addMsg.textContent = "Couldn't remove " + sym + "."; return; }
+        var rowEl = listEl.querySelector('.row[data-sym="' + cssEsc(sym) + '"]');
+        if (rowEl) rowEl.remove();
+        if (!listEl.querySelector(".row")) {
+          listEl.innerHTML = '<div class="empty">No tickers yet.<br>Add one above, or pull a read on the Desk and come back.</div>';
+        }
+      } catch (e) {}
+    }
+
+    // boot
+    (async function () {
+      if (!window.lidaAuth) { listEl.innerHTML = '<div class="empty">Please sign in.</div>'; return; }
+      var user = await window.lidaAuth.requireAuth();
+      if (!user) return; // redirected to login
+      client = window.lidaAuth.client;
+      addBtn.addEventListener("click", addTicker);
+      addInput.addEventListener("keydown", function (e) { if (e.key === "Enter") addTicker(); });
+      loadAll();
+    })();
+  </script>
+</body>
+</html>

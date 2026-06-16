@@ -11,7 +11,7 @@ You receive: the latest quote, recent news, basic fundamentals, analyst recommen
 averages, distance off recent high/low), and a "hype" signal computed from the stock's OWN price history —
 whether it is currently running hot (extended above its 50-day average, overbought, or freshly spiked) plus a
 real base_rate: of the times this stock was in a similar state in the past, how often it was LOWER 20 trading
-days later, and the median move. You also receive "regime": the stock's current market regime (an overall label, its volatility state with the typical daily move, and its volume behavior). You also receive "red_flags": objective warning signs computed from the fundamentals (losses, heavy debt, weak liquidity, shrinking revenue, stretched valuation), each with a severity.
+days later, and the median move. You also receive "regime": the stock's current market regime (an overall label, its volatility state with the typical daily move, and its volume behavior). You also receive "red_flags": objective warning signs computed from the fundamentals (losses, heavy debt, weak liquidity, shrinking revenue, stretched valuation), each with a severity. You also receive "earnings": the next scheduled earnings date (if known) and how the company has done against analyst EPS estimates recently.
 
 Rules:
 - Always give a real bear case, weighted equally with the bull case. Never hide the risks.
@@ -21,6 +21,7 @@ Rules:
   and moving averages as CONTEXT, never standalone buy/sell signals.
 - REGIME: factor the regime into your RISK framing. In high-volatility or choppy regimes, note that stops need more room, position size should be smaller, and whipsaws / failed breakouts are likelier; in calm trends, note conditions are more orderly. Reflect this in "levels", "stress_test", and "before_you_act". Describe how careful to be — do NOT prescribe a specific trading strategy to deploy. Decision-support, never a trade recommendation.
 - RED FLAGS: weight any red_flags in your bear case and stress_test — they are the concrete downside, straight from the numbers. If red_flags is empty, do NOT manufacture concerns; a clean balance sheet is a legitimate finding worth stating. These come only from financial metrics, not filings or accounting footnotes — never imply a full forensic audit.
+- EARNINGS: if earnings fall within ~2 weeks, flag the binary-event risk in stress_test and before_you_act (a scheduled report can swing the stock regardless of the thesis). Use the beat/miss record as an execution signal — consistent beats suggest the team hits its numbers, repeated misses are a concern — but don't overweight a small sample, and remember beating estimates is not the same as a good business.
 - HYPE HANDLING — this matters most. When hype.hot is true, your bear case and stress_test must bite HARDER:
   explicitly name the risk of chasing a stretched price, weight the downside, and let confidence reflect that
   buying into strength means buying high. When hype.hot is false, do NOT manufacture alarm — give a balanced read.
@@ -220,6 +221,31 @@ function computeRedFlags(f) {
   return { flags: flags, score: score, count: flags.length };
 }
 
+function buildEarnings(histRaw, calRaw) {
+  var out = { next_date: null, days_to: null, history: [], beats: 0, total: 0 };
+  try {
+    var cal = (calRaw && calRaw.earningsCalendar) || [];
+    var today = new Date().toISOString().slice(0, 10);
+    var upcoming = cal.filter(function (e) { return e && e.date && e.date >= today; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    if (upcoming.length) {
+      out.next_date = upcoming[0].date;
+      out.days_to = Math.round((new Date(upcoming[0].date) - new Date(today)) / 86400000);
+    }
+  } catch (e) {}
+  try {
+    var h = Array.isArray(histRaw) ? histRaw.slice(0, 4) : [];
+    out.history = h.map(function (q) {
+      var actual = typeof q.actual === "number" ? q.actual : null;
+      var estimate = typeof q.estimate === "number" ? q.estimate : null;
+      var beat = (actual != null && estimate != null) ? actual >= estimate : null;
+      if (beat === true) out.beats++;
+      if (actual != null && estimate != null) out.total++;
+      return { period: q.period, actual: actual, estimate: estimate, surprisePercent: typeof q.surprisePercent === "number" ? q.surprisePercent : null, beat: beat };
+    });
+  } catch (e) {}
+  return out;
+}
+
 export default async function handler(req, res) {
   const symbol = (req.query.symbol || "").toUpperCase().trim();
   if (!symbol) return res.status(400).json({ error: "Add a symbol, e.g. /api/analyze?symbol=AAPL" });
@@ -234,12 +260,13 @@ export default async function handler(req, res) {
     const base = "https://finnhub.io/api/v1";
     const today = new Date();
     const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const in120 = new Date(today.getTime() + 120 * 24 * 60 * 60 * 1000);
     const fmt = (d) => d.toISOString().slice(0, 10);
     const pick = (v) => (typeof v === "number" ? v : null);
 
     const tdUrl = TD ? `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1day&outputsize=300&apikey=${TD}` : null;
 
-    const [quoteRes, newsRes, metricRes, recRes, profRes, peersRes, tdRes] = await Promise.all([
+    const [quoteRes, newsRes, metricRes, recRes, profRes, peersRes, tdRes, earnRaw, calRaw] = await Promise.all([
       fetch(`${base}/quote?symbol=${symbol}&token=${FINNHUB}`),
       fetch(`${base}/company-news?symbol=${symbol}&from=${fmt(weekAgo)}&to=${fmt(today)}&token=${FINNHUB}`),
       fetch(`${base}/stock/metric?symbol=${symbol}&metric=all&token=${FINNHUB}`),
@@ -247,6 +274,8 @@ export default async function handler(req, res) {
       fetch(`${base}/stock/profile2?symbol=${symbol}&token=${FINNHUB}`),
       fetch(`${base}/stock/peers?symbol=${symbol}&token=${FINNHUB}`),
       tdUrl ? fetch(tdUrl).then((r) => r.json()).catch(() => null) : Promise.resolve(null),
+      fetch(`${base}/stock/earnings?symbol=${symbol}&token=${FINNHUB}`).then((r) => r.json()).catch(() => null),
+      fetch(`${base}/calendar/earnings?from=${fmt(today)}&to=${fmt(in120)}&symbol=${symbol}&token=${FINNHUB}`).then((r) => r.json()).catch(() => null),
     ]);
 
     const quote = await quoteRes.json();
@@ -277,6 +306,7 @@ export default async function handler(req, res) {
       eps: pick(m.epsTTM), beta: pick(m.beta),
     };
     const redFlags = computeRedFlags(figures);
+    const earnings = buildEarnings(earnRaw, calRaw);
 
     const rr = Array.isArray(recRaw) && recRaw.length ? recRaw[0] : null;
     const analyst = rr ? { strongBuy: rr.strongBuy || 0, buy: rr.buy || 0, hold: rr.hold || 0, sell: rr.sell || 0, strongSell: rr.strongSell || 0, period: rr.period || "" } : null;
@@ -301,7 +331,7 @@ export default async function handler(req, res) {
       price: quote.c, change: quote.d, percent: quote.dp, open: quote.o, prevClose: quote.pc, dayHigh: quote.h, dayLow: quote.l,
       fundamentals: figures, analyst,
       peers: peers.map((p) => ({ symbol: p.symbol, pe: p.pe, margin: p.margin })),
-      technicals, hype, regime, red_flags: redFlags,
+      technicals, hype, regime, red_flags: redFlags, earnings,
       recent_news: news.map((n) => ({ headline: n.headline, summary: n.summary })),
     };
 
@@ -322,7 +352,7 @@ export default async function handler(req, res) {
     let read;
     try { read = JSON.parse(text); } catch (e) { return res.status(502).json({ error: "Claude's reply wasn't in the expected format. Try again." }); }
 
-    return res.status(200).json({ symbol, read, news, figures, analyst, peers, technicals, hype, regime, redFlags });
+    return res.status(200).json({ symbol, read, news, figures, analyst, peers, technicals, hype, regime, redFlags, earnings });
   } catch (err) {
     return res.status(500).json({ error: "Something went wrong running the read. Try again in a moment." });
   }

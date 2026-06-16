@@ -10,7 +10,6 @@
     { label: "Desk", href: "/research.html" },
     { label: "Journal", href: "/journal.html" },
     { label: "Tasks", href: "/lida-tasks.html" },
-    
   ];
 
   function base(p) {
@@ -31,7 +30,10 @@
     '.lida-shell-link{color:#8A92A8;text-decoration:none;font-size:12px;letter-spacing:0.04em;' +
     'padding:7px 12px;border-radius:999px;white-space:nowrap;transition:color .15s,background .15s;}' +
     '.lida-shell-link:hover{color:#EDEFF7;}' +
-    '.lida-shell-link.active{color:#C9BEFF;background:rgba(133,118,255,0.16);}';
+    '.lida-shell-link.active{color:#C9BEFF;background:rgba(133,118,255,0.16);}' +
+    '.lida-shell-sep{width:1px;height:16px;background:rgba(255,255,255,0.12);margin:0 4px;flex:0 0 auto;}' +
+    '.lida-shell-who{color:#6E7488;font-size:11px;letter-spacing:0.02em;padding:0 6px;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;}' +
+    '.lida-shell-signout{color:#8A92A8;}.lida-shell-signout:hover{color:#FF8F8F;}';
 
   var style = document.createElement("style");
   style.textContent = css;
@@ -45,6 +47,35 @@
     html += '<a class="lida-shell-link' + (active ? " active" : "") + '" href="' + r.href + '">' + r.label + "</a>";
   });
   nav.innerHTML = html;
+
+  // ---- signed-in indicator / sign-out ----
+  var sep = document.createElement("span");
+  sep.className = "lida-shell-sep";
+  var authSlot = document.createElement("span");
+  authSlot.className = "lida-shell-authslot";
+  authSlot.style.display = "flex";
+  authSlot.style.alignItems = "center";
+
+  function renderAuth() {
+    function asSignIn() { authSlot.innerHTML = '<a class="lida-shell-link" href="/login.html">Sign in</a>'; }
+    if (!window.lidaAuth) { asSignIn(); return; }
+    window.lidaAuth.getSession().then(function (session) {
+      if (session && session.user) {
+        var email = session.user.email || "account";
+        authSlot.innerHTML =
+          '<span class="lida-shell-who" title="' + email + '">' + email + '</span>' +
+          '<a class="lida-shell-link lida-shell-signout" href="#">Sign out</a>';
+        var so = authSlot.querySelector(".lida-shell-signout");
+        if (so) so.onclick = function (e) {
+          e.preventDefault();
+          window.lidaAuth.signOut().then(function () { window.location.href = "/login.html"; });
+        };
+      } else { asSignIn(); }
+    }).catch(asSignIn);
+  }
+  nav.appendChild(sep);
+  nav.appendChild(authSlot);
+  renderAuth();
 
   function mount() { if (document.body) document.body.appendChild(nav); }
   if (document.body) mount();

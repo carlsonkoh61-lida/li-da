@@ -240,6 +240,13 @@
   .ea-q.miss { color: var(--down); border-color: rgba(255,107,107,0.4); }
   .ea-record { font-size: 13px; color: var(--muted); }
   .ea-record b { color: var(--paper); }
+  /* ---- insider activity ---- */
+  .ins-win { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); margin-left: 8px; }
+  .ins-head { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .ins-head.up { color: var(--up); }
+  .ins-head.warn { color: #F5B870; }
+  .ins-head.neutral { color: var(--muted); }
+  .ins-detail { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 0 0 8px; }
 
   /* ---- technicals ---- */
   .tech-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
@@ -607,7 +614,37 @@
         </div>`;
     }
 
-    return `<div class="evidence show"><h3>What it read</h3>${figsHtml}${rfHtml}${techHtml}${regimeHtml}${peersHtml}${analystHtml}${earnHtml}${newsHtml}</div>`;
+    // insider activity (open-market Form 4 trades — only if on this data tier)
+    const ins = d.insider || null;
+    let insiderHtml = "";
+    if (ins && ins.available) {
+      const fmtSh = (n) => {
+        n = Number(n);
+        if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
+        if (n >= 1e3) return Math.round(n / 1e3) + "K";
+        return String(n);
+      };
+      let headline, cls, detail;
+      if (ins.signal === "buying" || ins.signal === "net_buying") {
+        cls = "up"; headline = "Insiders buying";
+        detail = `Insiders bought ~${fmtSh(ins.bought)} shares across ${ins.buyTxns} open-market trade${ins.buyTxns === 1 ? "" : "s"}${ins.sellTxns ? ` (vs ${fmtSh(ins.sold)} sold)` : ""}. Insiders rarely buy with their own money unless they're optimistic — a mild positive.`;
+      } else if (ins.signal === "selling" || ins.signal === "net_selling") {
+        cls = "warn"; headline = "Insiders selling";
+        detail = `Insiders sold ~${fmtSh(ins.sold)} shares across ${ins.sellTxns} open-market trade${ins.sellTxns === 1 ? "" : "s"}${ins.buyTxns ? ` (vs ${fmtSh(ins.bought)} bought)` : ""}. Selling has many benign reasons (taxes, diversification, scheduled plans) — context, not a verdict.`;
+      } else {
+        cls = "neutral"; headline = "Mixed insider activity";
+        detail = `Roughly balanced over the window: ~${fmtSh(ins.bought)} bought vs ~${fmtSh(ins.sold)} sold.`;
+      }
+      insiderHtml = `
+        <div class="block">
+          <div class="lab">Insider activity <span class="ins-win">${esc(ins.window)}</span></div>
+          <div class="ins-head ${cls}">${esc(headline)}</div>
+          <p class="ins-detail">${esc(detail)}</p>
+          <p class="rf-caveat">Open-market Form 4 trades only (grants and option exercises excluded). Context, never a copy signal.</p>
+        </div>`;
+    }
+
+    return `<div class="evidence show"><h3>What it read</h3>${figsHtml}${rfHtml}${techHtml}${regimeHtml}${peersHtml}${analystHtml}${earnHtml}${insiderHtml}${newsHtml}</div>`;
   }
 
   function renderMove() {

@@ -11,7 +11,7 @@ You receive: the latest quote, recent news, basic fundamentals, analyst recommen
 averages, distance off recent high/low), and a "hype" signal computed from the stock's OWN price history —
 whether it is currently running hot (extended above its 50-day average, overbought, or freshly spiked) plus a
 real base_rate: of the times this stock was in a similar state in the past, how often it was LOWER 20 trading
-days later, and the median move. You also receive "regime": the stock's current market regime (an overall label, its volatility state with the typical daily move, and its volume behavior). You also receive "red_flags": objective warning signs computed from the fundamentals (losses, heavy debt, weak liquidity, shrinking revenue, stretched valuation), each with a severity. You also receive "earnings": the next scheduled earnings date (if known) and how the company has done against analyst EPS estimates recently.
+days later, and the median move. You also receive "regime": the stock's current market regime (an overall label, its volatility state with the typical daily move, and its volume behavior). You also receive "red_flags": objective warning signs computed from the fundamentals (losses, heavy debt, weak liquidity, shrinking revenue, stretched valuation), each with a severity. You also receive "earnings": the next scheduled earnings date (if known) and how the company has done against analyst EPS estimates recently. You also receive "insider": open-market insider buying vs selling over ~6 months (if available on this data tier).
 
 Rules:
 - Always give a real bear case, weighted equally with the bull case. Never hide the risks.
@@ -22,6 +22,7 @@ Rules:
 - REGIME: factor the regime into your RISK framing. In high-volatility or choppy regimes, note that stops need more room, position size should be smaller, and whipsaws / failed breakouts are likelier; in calm trends, note conditions are more orderly. Reflect this in "levels", "stress_test", and "before_you_act". Describe how careful to be — do NOT prescribe a specific trading strategy to deploy. Decision-support, never a trade recommendation.
 - RED FLAGS: weight any red_flags in your bear case and stress_test — they are the concrete downside, straight from the numbers. If red_flags is empty, do NOT manufacture concerns; a clean balance sheet is a legitimate finding worth stating. These come only from financial metrics, not filings or accounting footnotes — never imply a full forensic audit.
 - EARNINGS: if earnings fall within ~2 weeks, flag the binary-event risk in stress_test and before_you_act (a scheduled report can swing the stock regardless of the thesis). Use the beat/miss record as an execution signal — consistent beats suggest the team hits its numbers, repeated misses are a concern — but don't overweight a small sample, and remember beating estimates is not the same as a good business.
+- INSIDER ACTIVITY: "insider" summarizes open-market insider buying vs selling. Treat insider BUYING as a mild positive for the bull case — insiders rarely buy with their own money unless optimistic. Treat insider SELLING as a weak, noisy signal — executives sell for many benign reasons (taxes, diversification, scheduled plans), so mention heavy selling only as light bear-case context, never as proof of trouble. NEVER frame this as "follow the insiders" or a copy signal. If insider.available is false, say nothing about insiders at all.
 - HYPE HANDLING — this matters most. When hype.hot is true, your bear case and stress_test must bite HARDER:
   explicitly name the risk of chasing a stretched price, weight the downside, and let confidence reflect that
   buying into strength means buying high. When hype.hot is false, do NOT manufacture alarm — give a balanced read.
@@ -262,6 +263,39 @@ async function verifyUser(req) {
   }
 }
 
+function buildInsider(raw) {
+  var out = { available: false, bought: 0, sold: 0, net: 0, buyTxns: 0, sellTxns: 0, buyers: 0, sellers: 0, window: "~6 months", signal: "none" };
+  var data = raw && raw.data;
+  if (!Array.isArray(data) || data.length === 0) return out;
+  var buyerSet = {}, sellerSet = {};
+  for (var i = 0; i < data.length; i++) {
+    var t = data[i] || {};
+    var code = String(t.transactionCode || "").toUpperCase();
+    var change = Number(t.change);
+    if (isNaN(change) || change === 0) continue;
+    var isBuy = false, isSell = false;
+    if (code === "P") isBuy = true;             // open-market purchase
+    else if (code === "S") isSell = true;       // open-market sale
+    else if (!code) { isBuy = change > 0; isSell = change < 0; }
+    else continue;                              // skip grants/option exercises/gifts (noise)
+    var shares = Math.abs(change);
+    if (isBuy) { out.bought += shares; out.buyTxns++; if (t.name) buyerSet[t.name] = 1; }
+    if (isSell) { out.sold += shares; out.sellTxns++; if (t.name) sellerSet[t.name] = 1; }
+  }
+  out.buyers = Object.keys(buyerSet).length;
+  out.sellers = Object.keys(sellerSet).length;
+  out.net = out.bought - out.sold;
+  out.available = (out.buyTxns + out.sellTxns) > 0;
+  if (out.available) {
+    if (out.bought > 0 && out.sold === 0) out.signal = "buying";
+    else if (out.sold > 0 && out.bought === 0) out.signal = "selling";
+    else if (out.bought > out.sold * 1.5) out.signal = "net_buying";
+    else if (out.sold > out.bought * 1.5) out.signal = "net_selling";
+    else out.signal = "mixed";
+  }
+  return out;
+}
+
 export default async function handler(req, res) {
   const _auth = await verifyUser(req);
   if (!_auth.ok) return res.status(_auth.code).json({ error: _auth.msg });
@@ -279,12 +313,13 @@ export default async function handler(req, res) {
     const today = new Date();
     const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
     const in120 = new Date(today.getTime() + 120 * 24 * 60 * 60 * 1000);
+    const sixMoAgo = new Date(today.getTime() - 182 * 24 * 60 * 60 * 1000);
     const fmt = (d) => d.toISOString().slice(0, 10);
     const pick = (v) => (typeof v === "number" ? v : null);
 
     const tdUrl = TD ? `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1day&outputsize=300&apikey=${TD}` : null;
 
-    const [quoteRes, newsRes, metricRes, recRes, profRes, peersRes, tdRes, earnRaw, calRaw] = await Promise.all([
+    const [quoteRes, newsRes, metricRes, recRes, profRes, peersRes, tdRes, earnRaw, calRaw, insiderRaw] = await Promise.all([
       fetch(`${base}/quote?symbol=${symbol}&token=${FINNHUB}`),
       fetch(`${base}/company-news?symbol=${symbol}&from=${fmt(weekAgo)}&to=${fmt(today)}&token=${FINNHUB}`),
       fetch(`${base}/stock/metric?symbol=${symbol}&metric=all&token=${FINNHUB}`),
@@ -294,6 +329,7 @@ export default async function handler(req, res) {
       tdUrl ? fetch(tdUrl).then((r) => r.json()).catch(() => null) : Promise.resolve(null),
       fetch(`${base}/stock/earnings?symbol=${symbol}&token=${FINNHUB}`).then((r) => r.json()).catch(() => null),
       fetch(`${base}/calendar/earnings?from=${fmt(today)}&to=${fmt(in120)}&symbol=${symbol}&token=${FINNHUB}`).then((r) => r.json()).catch(() => null),
+      fetch(`${base}/stock/insider-transactions?symbol=${symbol}&from=${fmt(sixMoAgo)}&to=${fmt(today)}&token=${FINNHUB}`).then((r) => r.json()).catch(() => null),
     ]);
 
     const quote = await quoteRes.json();
@@ -325,6 +361,7 @@ export default async function handler(req, res) {
     };
     const redFlags = computeRedFlags(figures);
     const earnings = buildEarnings(earnRaw, calRaw);
+    const insider = buildInsider(insiderRaw);
 
     const rr = Array.isArray(recRaw) && recRaw.length ? recRaw[0] : null;
     const analyst = rr ? { strongBuy: rr.strongBuy || 0, buy: rr.buy || 0, hold: rr.hold || 0, sell: rr.sell || 0, strongSell: rr.strongSell || 0, period: rr.period || "" } : null;
@@ -349,7 +386,7 @@ export default async function handler(req, res) {
       price: quote.c, change: quote.d, percent: quote.dp, open: quote.o, prevClose: quote.pc, dayHigh: quote.h, dayLow: quote.l,
       fundamentals: figures, analyst,
       peers: peers.map((p) => ({ symbol: p.symbol, pe: p.pe, margin: p.margin })),
-      technicals, hype, regime, red_flags: redFlags, earnings,
+      technicals, hype, regime, red_flags: redFlags, earnings, insider,
       recent_news: news.map((n) => ({ headline: n.headline, summary: n.summary })),
     };
 
@@ -370,7 +407,7 @@ export default async function handler(req, res) {
     let read;
     try { read = JSON.parse(text); } catch (e) { return res.status(502).json({ error: "Claude's reply wasn't in the expected format. Try again." }); }
 
-    return res.status(200).json({ symbol, read, news, figures, analyst, peers, technicals, hype, regime, redFlags, earnings });
+    return res.status(200).json({ symbol, read, news, figures, analyst, peers, technicals, hype, regime, redFlags, earnings, insider });
   } catch (err) {
     return res.status(500).json({ error: "Something went wrong running the read. Try again in a moment." });
   }

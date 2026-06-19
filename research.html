@@ -149,11 +149,10 @@
   .frag-reason { font-size: 13px; color: var(--muted); line-height: 1.4; }
 
   /* ---- evidence ---- */
-  .figs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
-  @media (max-width: 420px) { .figs { grid-template-columns: 1fr; } }
-  .fig { display: flex; justify-content: space-between; font-size: 14px; border-bottom: 1px dotted var(--line); padding-bottom: 6px; }
-  .fig span:first-child { color: var(--muted); }
-  .fig span:last-child { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  .figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 12px; }
+  .fig { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 13px 15px; display: flex; flex-direction: column; gap: 6px; }
+  .fig span:first-child { color: var(--muted); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .fig span:last-child { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-size: 18px; color: var(--ink); line-height: 1.15; word-break: break-word; }
   .analyst { margin-top: 4px; font-size: 14px; line-height: 1.5; }
   .analyst .bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; margin-top: 10px; background: rgba(255,255,255,0.06); }
   .analyst .bar i { display: block; height: 100%; }

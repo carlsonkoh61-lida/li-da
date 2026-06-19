@@ -20,7 +20,8 @@ export default async function handler(req, res) {
   try {
     const base = "https://finnhub.io/api/v1";
 
-    // Two calls at once: the live quote, and the company profile (for the name).
+    // Two calls at once: the live quote, and the company profile
+    // (for the name, logo, and sector — all used by the hero card).
     const [quoteRes, profileRes] = await Promise.all([
       fetch(`${base}/quote?symbol=${symbol}&token=${KEY}`),
       fetch(`${base}/stock/profile2?symbol=${symbol}&token=${KEY}`),
@@ -37,6 +38,8 @@ export default async function handler(req, res) {
     return res.status(200).json({
       symbol,
       name: profile.name || symbol,
+      logo: profile.logo || "",                 // company logo URL — for the hero's logo tile
+      industry: profile.finnhubIndustry || "",  // sector, e.g. "Technology" — for the hero's sector pill
       price: quote.c,      // current price
       change: quote.d,     // change vs previous close
       percent: quote.dp,   // percent change

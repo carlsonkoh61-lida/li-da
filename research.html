@@ -274,11 +274,16 @@
   .seg button.active { background: rgba(143,176,214,0.15); border-color: var(--violet); color: var(--violet-soft); }
   .fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
   @media (max-width: 480px) { .fields { grid-template-columns: 1fr; } }
-  .fields label { display: flex; flex-direction: column; gap: 6px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-  .fields input { background: rgba(11,13,20,0.6); border: 1px solid var(--line); border-radius: 8px; color: var(--paper); font-family: "IBM Plex Mono", monospace; font-size: 15px; padding: 10px 12px; outline: none; transition: border-color 0.15s; }
-  .fields input:focus { border-color: var(--violet); }
-  .rr { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--muted); margin-bottom: 16px; min-height: 18px; }
-  .rr.good { color: var(--up); } .rr.bad { color: var(--down); }
+  .fields label { display: flex; flex-direction: column; gap: 5px; font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 13px; transition: border-color 0.15s, box-shadow 0.15s; }
+  .fields label.entry { border-color: rgba(143,176,214,0.30); }
+  .fields label.stop { border-color: rgba(217,112,107,0.35); color: var(--down); }
+  .fields label.target { border-color: rgba(95,181,140,0.35); color: var(--up); }
+  .fields label:focus-within { box-shadow: 0 0 0 1px currentColor; }
+  .fields input { background: transparent; border: none; border-radius: 0; color: var(--ink); font-family: "IBM Plex Mono", monospace; font-size: 16px; padding: 0; outline: none; width: 100%; }
+  .rr { display: inline-block; font-family: "IBM Plex Mono", monospace; font-size: 13px; padding: 5px 13px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,0.03); color: var(--muted); margin-bottom: 16px; }
+  .rr:empty { display: none; }
+  .rr.good { color: var(--up); border-color: rgba(95,181,140,0.45); background: rgba(95,181,140,0.10); }
+  .rr.bad { color: var(--down); border-color: rgba(217,112,107,0.45); background: rgba(217,112,107,0.10); }
   .reason { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 16px; }
   .reason textarea { background: rgba(11,13,20,0.6); border: 1px solid var(--line); border-radius: 8px; color: var(--paper); font-family: "Inter", sans-serif; font-size: 14px; padding: 12px; outline: none; resize: vertical; line-height: 1.5; transition: border-color 0.15s; }
   .reason textarea:focus { border-color: var(--violet); }
@@ -732,9 +737,9 @@
           <button data-v="skip">Skip</button>
         </div>
         <div class="fields">
-          <label>Entry <input id="f-entry" inputmode="decimal" /></label>
-          <label>Stop-loss <input id="f-stop" inputmode="decimal" /></label>
-          <label>Take-profit <input id="f-target" inputmode="decimal" /></label>
+          <label class="entry">Entry <input id="f-entry" inputmode="decimal" /></label>
+          <label class="stop">Stop-loss <input id="f-stop" inputmode="decimal" /></label>
+          <label class="target">Take-profit <input id="f-target" inputmode="decimal" /></label>
         </div>
         <div class="rr" id="rr"></div>
         <label class="reason">Why this, why now? What would make you wrong?

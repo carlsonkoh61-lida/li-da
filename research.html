@@ -105,11 +105,13 @@
   .read.thinking { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 14px; }
   /* signature: the read signal — confidence ring + bull/bear meter */
   .signal2 { display: flex; align-items: center; gap: 20px; padding: 16px 18px; border-radius: 14px; background: rgba(143,176,214,0.05); border: 1px solid var(--line); margin-bottom: 16px; flex-wrap: wrap; }
-  .ring { position: relative; width: 84px; height: 84px; flex: none; }
-  .ring svg { display: block; }
-  .ring .rc { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
-  .ring .rc b { font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 14px; line-height: 1; }
-  .ring .rc span { font-family: "IBM Plex Mono", monospace; font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+  .ring { display: flex; flex-direction: column; align-items: center; gap: 7px; flex: none; }
+  .dial { position: relative; width: 84px; height: 84px; }
+  .dial svg { display: block; }
+  .dial .rc { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+  .dial .rc b { font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 13px; line-height: 1; }
+  .ring .cap { font-family: "IBM Plex Mono", monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .ring .cap b { font-weight: 500; }
   .sig-main { flex: 1; min-width: 220px; }
   .sig-top { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
   .sig-leanlabel { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
@@ -464,11 +466,14 @@
         </div>`
       : "";
     const conf = (r.confidence || "low").toLowerCase();
-    const C = "213.6";
-    const ringFrac = { low: 0.34, medium: 0.67, high: 1 }[conf] || 0.34;
     const ringCol = { low: "var(--accent-deep)", medium: "var(--accent)", high: "var(--gold)" }[conf] || "var(--accent)";
-    const dashoff = (213.6 * (1 - ringFrac)).toFixed(1);
     const confWord = conf.charAt(0).toUpperCase() + conf.slice(1);
+    const litCount = { low: 1, medium: 2, high: 3 }[conf] || 1;
+    let ringSegs = "";
+    for (let i = 0; i < 3; i++) {
+      const segCol = i < litCount ? ringCol : "rgba(255,255,255,0.09)";
+      ringSegs += `<circle cx="42" cy="42" r="34" fill="none" stroke="${segCol}" stroke-width="6" stroke-dasharray="61.2 152.4" transform="rotate(${-82 + i * 120} 42 42)"></circle>`;
+    }
     const lean = (r.lean || "hold").toLowerCase();
     const leanDir = lean === "buy" ? 1 : lean === "sell" ? -1 : 0;
     const confMag = { low: 0.4, medium: 0.7, high: 1 }[conf] || 0.4;
@@ -478,11 +483,11 @@
         <div class="card-eyebrow">The read</div>
         <div class="signal2">
           <div class="ring">
-            <svg viewBox="0 0 84 84" width="84" height="84" aria-hidden="true">
-              <circle cx="42" cy="42" r="34" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="6"></circle>
-              <circle cx="42" cy="42" r="34" fill="none" stroke="${ringCol}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${dashoff}" transform="rotate(-90 42 42)"></circle>
-            </svg>
-            <div class="rc"><b style="color:${ringCol}">${esc(confWord)}</b><span>Confidence</span></div>
+            <div class="dial">
+              <svg viewBox="0 0 84 84" width="84" height="84" aria-hidden="true">${ringSegs}</svg>
+              <div class="rc"><b style="color:${ringCol}">${esc(confWord)}</b></div>
+            </div>
+            <div class="cap"><b style="color:${ringCol}">${litCount} of 3</b> · confidence</div>
           </div>
           <div class="sig-main">
             <div class="sig-top"><span class="sig-leanlabel">Li-Da leans</span><span class="sig-lean">${esc(r.lean || "\u2014")}</span></div>

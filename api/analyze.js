@@ -368,8 +368,9 @@ export default async function handler(req, res) {
 
     let peerSymbols = Array.isArray(peersRaw) ? peersRaw.filter((s) => s && s.toUpperCase() !== symbol).slice(0, 4) : [];
     const peerMetrics = await Promise.all(peerSymbols.map((s) => fetch(`${base}/stock/metric?symbol=${s}&metric=all&token=${FINNHUB}`).then((r) => r.json()).catch(() => null)));
-    const peerRows = peerSymbols.map((s, i) => { const mm = (peerMetrics[i] && peerMetrics[i].metric) || {}; return { symbol: s, pe: pick(mm.peTTM != null ? mm.peTTM : mm.peNormalizedAnnual), margin: pick(mm.netProfitMarginTTM) }; });
-    const peers = [{ symbol, pe: figures.pe, margin: figures.profitMargin, isTarget: true }, ...peerRows];
+    const peerProfiles = await Promise.all(peerSymbols.map((s) => fetch(`${base}/stock/profile2?symbol=${s}&token=${FINNHUB}`).then((r) => r.json()).catch(() => null)));
+    const peerRows = peerSymbols.map((s, i) => { const mm = (peerMetrics[i] && peerMetrics[i].metric) || {}; const pp = peerProfiles[i] || {}; return { symbol: s, name: pp.name || "", logo: pp.logo || "", marketCap: pick(mm.marketCapitalization), pe: pick(mm.peTTM != null ? mm.peTTM : mm.peNormalizedAnnual), margin: pick(mm.netProfitMarginTTM) }; });
+    const peers = [{ symbol, name: (profile && profile.name) || symbol, logo: (profile && profile.logo) || "", marketCap: figures.marketCap, pe: figures.pe, margin: figures.profitMargin, isTarget: true }, ...peerRows];
 
     let technicals = null, hype = { hot: false }, regime = null, closes = null;
     if (tdData && Array.isArray(tdData.values)) {

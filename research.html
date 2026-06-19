@@ -163,12 +163,25 @@
   .peer-take { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
   .ptag { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(143,176,214,0.5); color: var(--violet-soft); white-space: nowrap; }
   .peer-take p { font-size: 14px; line-height: 1.5; color: var(--paper); flex: 1; min-width: 200px; }
-  table.peers { width: 100%; border-collapse: collapse; font-size: 14px; }
-  table.peers th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; padding: 6px 0; border-bottom: 1px solid var(--line); }
-  table.peers th:not(:first-child), table.peers td:not(:first-child) { text-align: right; }
-  table.peers td { padding: 9px 0; border-bottom: 1px dotted var(--line); font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; color: var(--paper); }
-  table.peers tr.target td { color: var(--violet-soft); }
-  table.peers tr.target td:first-child { font-weight: 600; }
+  .peertbl { display: flex; flex-direction: column; gap: 6px; }
+  .peerhead, .peerrow { display: grid; grid-template-columns: minmax(0,1fr) 92px 54px 64px; align-items: center; gap: 10px; }
+  .peerhead { padding: 0 12px 8px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .peerhead span:not(:first-child) { text-align: right; }
+  .peerrow { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; }
+  .peerrow.target { border-color: rgba(143,176,214,0.45); background: rgba(143,176,214,0.06); }
+  .peerco { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .peerlogo { position: relative; width: 28px; height: 28px; border-radius: 7px; background: #F2F4F8; display: grid; place-items: center; flex: none; overflow: hidden; }
+  .peerlogo img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+  .peerlogo .pi { display: none; font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 11px; color: var(--bg); }
+  .peerlogo.noimg { background: rgba(255,255,255,0.06); border: 1px solid var(--line); }
+  .peerlogo.noimg .pi { display: block; color: var(--accent); }
+  .peerco .pnm { min-width: 0; }
+  .peerco .pn { font-size: 13px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .peerco .ps { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.04em; }
+  .peerrow.target .ps { color: var(--accent-dim); }
+  .peer-you { font-family: "IBM Plex Mono", monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); border: 1px solid rgba(143,176,214,0.4); border-radius: 999px; padding: 1px 6px; margin-left: 7px; }
+  .peerrow .m { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--ink-dim); text-align: right; }
+  @media (max-width: 480px) { .peerhead, .peerrow { grid-template-columns: minmax(0,1fr) 64px 44px 52px; gap: 6px; } }
 
   /* ---- news take ---- */
   .nt-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
@@ -537,22 +550,36 @@
     const pt = (d.read && d.read.peer_take) || null;
     let peersHtml = "";
     if (peers.length > 1) {
-      const prows = peers.map((p) => `
-        <tr class="${p.isTarget ? "target" : ""}">
-          <td>${esc(p.symbol)}</td>
-          <td>${p.pe != null ? num(p.pe) : "—"}</td>
-          <td>${p.margin != null ? pct(p.margin) : "—"}</td>
-        </tr>`).join("");
+      const fmtCap = (v) => {
+        if (v == null || isNaN(v)) return "—";
+        if (v >= 1e6) return "$" + (v / 1e6).toFixed(2) + "T";
+        if (v >= 1e3) return "$" + (v / 1e3).toFixed(0) + "B";
+        return "$" + Math.round(v) + "M";
+      };
+      const prows = peers.map((p) => {
+        const init = String(p.symbol || "?").slice(0, 2).toUpperCase();
+        const logo = p.logo
+          ? `<div class="peerlogo"><img src="${esc(p.logo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove(); this.closest('.peerlogo').classList.add('noimg');" /><span class="pi">${esc(init)}</span></div>`
+          : `<div class="peerlogo noimg"><span class="pi">${esc(init)}</span></div>`;
+        const you = p.isTarget ? `<span class="peer-you">You</span>` : "";
+        return `
+          <div class="peerrow ${p.isTarget ? "target" : ""}">
+            <div class="peerco">${logo}<div class="pnm"><div class="pn">${esc(p.name || p.symbol)}</div><div class="ps">${esc(p.symbol)}${you}</div></div></div>
+            <span class="m">${fmtCap(p.marketCap)}</span>
+            <span class="m">${p.pe != null ? num(p.pe) : "—"}</span>
+            <span class="m">${p.margin != null ? pct(p.margin) : "—"}</span>
+          </div>`;
+      }).join("");
       const tag = pt ? `<span class="ptag">${esc(pt.relative || "vs peers")}</span>` : "";
       const detail = pt ? `<p>${esc(pt.detail || "")}</p>` : "";
       peersHtml = `
         <div class="block">
           <div class="lab">Versus peers</div>
           <div class="peer-take">${tag}${detail}</div>
-          <table class="peers">
-            <thead><tr><th>Ticker</th><th>P/E</th><th>Margin</th></tr></thead>
-            <tbody>${prows}</tbody>
-          </table>
+          <div class="peertbl">
+            <div class="peerhead"><span>Company</span><span>Mkt cap</span><span>P/E</span><span>Margin</span></div>
+            ${prows}
+          </div>
         </div>`;
     } else if (pt && pt.detail) {
       peersHtml = `<div class="block"><div class="lab">Versus peers</div><p class="empty">${esc(pt.detail)}</p></div>`;

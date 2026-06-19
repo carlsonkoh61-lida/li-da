@@ -13,83 +13,92 @@
   html, body { margin: 0; height: 100%; }
   body {
     background: var(--bg);
-    color: var(--paper);
-    font-family: "Inter", system-ui, sans-serif;
+    color: var(--ink);
+    font-family: var(--font-body);
     display: flex; align-items: center; justify-content: center;
     min-height: 100vh; padding: 24px;
     position: relative; overflow: hidden;
   }
-  /* ambient drift to match the Desk */
+  /* terminal ambience: faint teal wash + fine engineering grid */
   body::before {
-    content: ""; position: fixed; inset: -30%;
-    background: radial-gradient(60% 50% at 30% 30%, rgba(133,118,255,0.10), transparent 70%);
-    animation: drift 22s ease-in-out infinite alternate; pointer-events: none;
+    content: ""; position: fixed; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(72% 60% at 50% -5%, rgba(63,199,184,0.07), transparent 70%),
+      linear-gradient(rgba(255,255,255,0.016) 1px, transparent 1px) 0 0 / 100% 34px,
+      linear-gradient(90deg, rgba(255,255,255,0.016) 1px, transparent 1px) 0 0 / 34px 100%;
   }
-  @keyframes drift { from { transform: translate(-4%, -2%); } to { transform: translate(4%, 3%); } }
-  @media (prefers-reduced-motion: reduce) { body::before { animation: none; } }
 
   .card {
     position: relative; z-index: 1;
-    width: 100%; max-width: 380px;
-    background: var(--panel);
+    width: 100%; max-width: 392px;
+    background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 18px;
-    padding: 34px 30px;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+    border-radius: var(--r-lg);
+    padding: 28px 30px 26px;
+    box-shadow: 0 30px 70px rgba(0,0,0,0.5);
   }
-  .brand {
-    font-family: "IBM Plex Mono", monospace; font-weight: 500;
-    letter-spacing: 0.18em; font-size: 13px; color: var(--brand);
-    text-align: center; margin-bottom: 22px;
-  }
-  h1 {
-    font-family: "Space Grotesk", sans-serif; font-weight: 600;
-    font-size: 24px; margin: 0 0 6px; text-align: center;
-  }
-  .sub { color: var(--muted); font-size: 13.5px; text-align: center; margin: 0 0 24px; line-height: 1.5; }
 
-  label { display: block; font-size: 12px; color: var(--muted); margin: 0 0 6px; letter-spacing: 0.02em; }
-  input {
-    width: 100%; background: #0E1018; color: var(--paper);
-    border: 1px solid var(--line); border-radius: 11px;
-    padding: 12px 13px; font-size: 14.5px; font-family: "Inter", sans-serif;
-    margin-bottom: 15px; outline: none; transition: border-color 0.15s;
+  /* terminal header line */
+  .brand {
+    font-family: var(--font-mono); font-weight: 500;
+    letter-spacing: 0.16em; font-size: 12px; color: var(--accent);
+    text-align: left; margin: 0 0 20px; padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
   }
-  input:focus { border-color: rgba(133,118,255,0.6); }
+  .brand::after { content: "  //  research terminal"; color: var(--muted); letter-spacing: 0.12em; }
+
+  h1 {
+    font-family: var(--font-display); font-weight: 600;
+    font-size: 23px; margin: 0 0 6px; text-align: left; letter-spacing: -0.01em;
+  }
+  .sub { color: var(--muted); font-size: 13px; text-align: left; margin: 0 0 24px; line-height: 1.5; }
+
+  label {
+    display: block; font-family: var(--font-mono); font-size: 10.5px;
+    color: var(--muted); margin: 0 0 7px; letter-spacing: 0.16em; text-transform: uppercase;
+  }
+  input {
+    width: 100%; background: var(--surface-2); color: var(--ink);
+    border: 1px solid var(--line); border-radius: var(--r-sm);
+    padding: 12px 13px; font-size: 14px; font-family: var(--font-mono);
+    margin-bottom: 16px; outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input::placeholder { color: #495063; }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(63,199,184,0.14); }
 
   button.primary {
-    width: 100%; background: var(--brand); color: #0B0D14;
-    border: none; border-radius: 11px; padding: 13px;
-    font-size: 15px; font-weight: 600; font-family: "Space Grotesk", sans-serif;
-    cursor: pointer; transition: opacity 0.15s; margin-top: 4px;
+    width: 100%; background: var(--accent); color: var(--bg);
+    border: none; border-radius: var(--r-sm); padding: 13px;
+    font-size: 14.5px; font-weight: 600; font-family: var(--font-display);
+    letter-spacing: 0.01em; cursor: pointer; transition: filter 0.15s; margin-top: 4px;
   }
-  button.primary:hover { opacity: 0.9; }
+  button.primary:hover { filter: brightness(1.08); }
   button.primary:disabled { opacity: 0.5; cursor: default; }
 
   .toggle { text-align: center; margin-top: 18px; font-size: 13px; color: var(--muted); }
-  .toggle a { color: var(--brand); cursor: pointer; text-decoration: none; }
+  .toggle a { color: var(--accent); cursor: pointer; text-decoration: none; }
   .toggle a:hover { text-decoration: underline; }
 
-  .msg { font-size: 13px; line-height: 1.5; margin: 4px 0 14px; padding: 10px 12px; border-radius: 10px; display: none; }
-  .msg.err { display: block; color: var(--down); border: 1px solid rgba(255,107,107,0.3); background: rgba(255,107,107,0.06); }
-  .msg.ok { display: block; color: var(--up); border: 1px solid rgba(74,222,154,0.3); background: rgba(74,222,154,0.06); }
+  .msg { font-size: 12.5px; line-height: 1.5; margin: 4px 0 14px; padding: 10px 12px; border-radius: var(--r-sm); display: none; font-family: var(--font-mono); }
+  .msg.err { display: block; color: var(--down); border: 1px solid rgba(224,101,95,0.3); background: rgba(224,101,95,0.06); }
+  .msg.ok { display: block; color: var(--up); border: 1px solid rgba(70,184,131,0.3); background: rgba(70,184,131,0.06); }
 
-  /* signed-in state */
-  .signed { display: none; text-align: center; }
+  .signed { display: none; text-align: left; }
   .signed.show { display: block; }
-  .signed .who { font-family: "IBM Plex Mono", monospace; font-size: 14px; color: var(--paper); margin: 6px 0 4px; word-break: break-all; }
-  .signed .tick { color: var(--up); font-size: 13px; margin-bottom: 22px; }
+  .signed .who { font-family: var(--font-mono); font-size: 14px; color: var(--accent); margin: 6px 0 4px; word-break: break-all; }
+  .signed .tick { color: var(--up); font-size: 12px; font-family: var(--font-mono); margin-bottom: 22px; }
   .signed .row { display: flex; gap: 10px; }
   .signed a.btn, .signed button.btn {
     flex: 1; display: block; text-align: center; text-decoration: none;
-    border-radius: 11px; padding: 12px; font-size: 14px; font-weight: 600;
-    font-family: "Space Grotesk", sans-serif; cursor: pointer;
+    border-radius: var(--r-sm); padding: 12px; font-size: 13.5px; font-weight: 600;
+    font-family: var(--font-display); cursor: pointer;
   }
-  .signed a.btn { background: var(--brand); color: #0B0D14; }
+  .signed a.btn { background: var(--accent); color: var(--bg); }
   .signed button.btn { background: transparent; color: var(--muted); border: 1px solid var(--line); }
-  .signed button.btn:hover { color: var(--paper); }
+  .signed button.btn:hover { color: var(--ink); border-color: var(--line-strong); }
 
-  .note { color: var(--muted); font-size: 11.5px; text-align: center; margin-top: 20px; line-height: 1.5; }
+  .note { color: var(--muted); font-family: var(--font-mono); font-size: 11px; text-align: left; margin-top: 22px; line-height: 1.6; letter-spacing: 0.02em; padding-top: 16px; border-top: 1px solid var(--line); }
+  .note::before { content: "\25CF  "; color: var(--accent); }
 </style>
 </head>
 <body>

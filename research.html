@@ -15,8 +15,8 @@
   body {
     background-color: var(--bg);
     background-image:
-      radial-gradient(900px 620px at 78% -12%, rgba(63,199,184,0.12), transparent 60%),
-      radial-gradient(820px 720px at 16% 112%, rgba(63,199,184,0.10), transparent 60%);
+      radial-gradient(900px 620px at 78% -12%, rgba(143,176,214,0.12), transparent 60%),
+      radial-gradient(820px 720px at 16% 112%, rgba(143,176,214,0.10), transparent 60%);
     background-attachment: fixed;
     color: var(--paper);
     font-family: "Inter", system-ui, sans-serif;
@@ -42,7 +42,7 @@
     letter-spacing: 0.08em; text-transform: uppercase; padding: 15px 16px; outline: none;
     transition: border-color 0.18s, box-shadow 0.18s;
   }
-  input.symbol:focus { border-color: var(--violet); box-shadow: 0 0 0 3px rgba(63,199,184,0.16); }
+  input.symbol:focus { border-color: var(--violet); box-shadow: 0 0 0 3px rgba(143,176,214,0.16); }
   input.symbol::placeholder { color: var(--muted); text-transform: none; letter-spacing: normal; }
 
   button.primary, .logbtn {
@@ -50,10 +50,10 @@
     color: #0B0D14; border: none; border-radius: 12px;
     font-family: "Inter", sans-serif; font-weight: 600; font-size: 15px;
     cursor: pointer; transition: transform 0.18s, box-shadow 0.18s, filter 0.18s;
-    box-shadow: 0 6px 24px -6px rgba(63,199,184,0.55);
+    box-shadow: 0 6px 24px -6px rgba(143,176,214,0.55);
   }
   button.primary { padding: 0 24px; }
-  button.primary:hover, .logbtn:hover { filter: brightness(1.06); box-shadow: 0 8px 30px -6px rgba(63,199,184,0.7); }
+  button.primary:hover, .logbtn:hover { filter: brightness(1.06); box-shadow: 0 8px 30px -6px rgba(143,176,214,0.7); }
   button.primary:disabled, .logbtn:disabled { opacity: 0.5; cursor: default; filter: none; box-shadow: none; }
 
   /* ---- glass cards ---- */
@@ -66,8 +66,8 @@
   }
   .card { margin-top: 28px; }
   .card:hover, .read:hover, .evidence:hover, .move:hover {
-    transform: translateY(-2px); border-color: rgba(63,199,184,0.22);
-    box-shadow: 0 18px 54px -16px rgba(0,0,0,0.62), 0 0 0 1px rgba(63,199,184,0.05), inset 0 1px 0 rgba(255,255,255,0.06);
+    transform: translateY(-2px); border-color: rgba(143,176,214,0.22);
+    box-shadow: 0 18px 54px -16px rgba(0,0,0,0.62), 0 0 0 1px rgba(143,176,214,0.05), inset 0 1px 0 rgba(255,255,255,0.06);
   }
   .show { opacity: 0; transform: translateY(10px); animation: rise 0.4s cubic-bezier(.2,.7,.2,1) forwards; }
   @keyframes rise { to { opacity: 1; transform: none; } }
@@ -93,16 +93,16 @@
   /* signature: the signal module */
   .signal-module {
     display: flex; align-items: center; gap: 14px; padding: 15px 18px; border-radius: 14px;
-    background: linear-gradient(135deg, rgba(63,199,184,0.16), rgba(63,199,184,0.03));
-    border: 1px solid rgba(63,199,184,0.35); margin-bottom: 18px;
+    background: linear-gradient(135deg, rgba(143,176,214,0.16), rgba(143,176,214,0.03));
+    border: 1px solid rgba(143,176,214,0.35); margin-bottom: 18px;
   }
   .signal-module .sm-label { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
   .signal-module .sm-lean { font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 23px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--violet-soft); margin-right: auto; }
   .signal-module .sm-conf { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 5px 11px; border: 1px solid var(--line); border-radius: 999px; }
-  .signal-module.conf-low { box-shadow: 0 0 12px -4px rgba(63,199,184,0.2); }
-  .signal-module.conf-medium { box-shadow: 0 0 20px -4px rgba(63,199,184,0.34); border-color: rgba(63,199,184,0.45); }
-  .signal-module.conf-high { border-color: rgba(63,199,184,0.6); animation: pulse 3.4s ease-in-out infinite; }
-  @keyframes pulse { 0%,100% { box-shadow: 0 0 22px -4px rgba(63,199,184,0.42); } 50% { box-shadow: 0 0 38px 0 rgba(63,199,184,0.62); } }
+  .signal-module.conf-low { box-shadow: 0 0 12px -4px rgba(143,176,214,0.2); }
+  .signal-module.conf-medium { box-shadow: 0 0 20px -4px rgba(143,176,214,0.34); border-color: rgba(143,176,214,0.45); }
+  .signal-module.conf-high { border-color: rgba(143,176,214,0.6); animation: pulse 3.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 22px -4px rgba(143,176,214,0.42); } 50% { box-shadow: 0 0 38px 0 rgba(143,176,214,0.62); } }
 
   .conf-reason { font-size: 13px; color: var(--muted); line-height: 1.45; margin-bottom: 18px; }
   .read-summary { font-family: "Space Grotesk", sans-serif; font-weight: 500; font-size: 20px; line-height: 1.36; margin-bottom: 22px; letter-spacing: -0.01em; }
@@ -128,7 +128,7 @@
   .st-frag { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
   .frag-pill { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
   .frag-pill.low { color: var(--up); border-color: rgba(74,222,154,0.5); }
-  .frag-pill.medium { color: var(--violet-soft); border-color: rgba(63,199,184,0.5); }
+  .frag-pill.medium { color: var(--violet-soft); border-color: rgba(143,176,214,0.5); }
   .frag-pill.high { color: var(--down); border-color: rgba(255,107,107,0.5); }
   .frag-reason { font-size: 13px; color: var(--muted); line-height: 1.4; }
 
@@ -144,7 +144,7 @@
   .analyst .bar .b { background: var(--up); } .analyst .bar .h { background: var(--muted); } .analyst .bar .s { background: var(--down); }
   /* ---- versus peers ---- */
   .peer-take { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
-  .ptag { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(63,199,184,0.5); color: var(--violet-soft); white-space: nowrap; }
+  .ptag { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(143,176,214,0.5); color: var(--violet-soft); white-space: nowrap; }
   .peer-take p { font-size: 14px; line-height: 1.5; color: var(--paper); flex: 1; min-width: 200px; }
   table.peers { width: 100%; border-collapse: collapse; font-size: 14px; }
   table.peers th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; padding: 6px 0; border-bottom: 1px solid var(--line); }
@@ -158,7 +158,7 @@
   .signal { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
   .signal.positive { color: var(--up); border-color: rgba(74,222,154,0.5); }
   .signal.negative { color: var(--down); border-color: rgba(255,107,107,0.5); }
-  .signal.mixed { color: var(--violet-soft); border-color: rgba(63,199,184,0.5); }
+  .signal.mixed { color: var(--violet-soft); border-color: rgba(143,176,214,0.5); }
   .signal.quiet { color: var(--muted); border-color: var(--line); }
   .nt-headline { font-size: 15px; font-weight: 500; line-height: 1.4; }
   .nt-detail { font-size: 14px; line-height: 1.5; color: var(--paper); }
@@ -179,12 +179,12 @@
 
   /* ---- terminal chart ---- */
   .chart-card { margin-top: 16px; background: var(--panel); backdrop-filter: blur(16px) saturate(125%); -webkit-backdrop-filter: blur(16px) saturate(125%); border: 1px solid var(--line); border-radius: 18px; padding: 24px; position: relative; box-shadow: 0 12px 44px -14px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05); transition: transform 0.25s ease, border-color 0.25s ease; }
-  .chart-card:hover { transform: translateY(-2px); border-color: rgba(63,199,184,0.22); }
+  .chart-card:hover { transform: translateY(-2px); border-color: rgba(143,176,214,0.22); }
   .chart-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; }
   .tfbar { display: flex; gap: 6px; }
   .tf { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 8px; padding: 5px 11px; font-family: "IBM Plex Mono", monospace; font-size: 12px; cursor: pointer; transition: all 0.15s; }
-  .tf:hover { color: var(--paper); border-color: rgba(63,199,184,0.4); }
-  .tf.active { background: rgba(63,199,184,0.15); border-color: var(--violet); color: var(--violet-soft); }
+  .tf:hover { color: var(--paper); border-color: rgba(143,176,214,0.4); }
+  .tf.active { background: rgba(143,176,214,0.15); border-color: var(--violet); color: var(--violet-soft); }
   .ohlc { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); margin-bottom: 8px; min-height: 16px; display: flex; gap: 13px; flex-wrap: wrap; }
   .ohlc .oh b { color: var(--paper); font-weight: 500; }
   .ohlc .oh b.up { color: var(--up); } .ohlc .oh b.down { color: var(--down); }
@@ -242,9 +242,9 @@
   .tchip { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
   .tchip.up { color: var(--up); border-color: rgba(74,222,154,0.5); }
   .tchip.down { color: var(--down); border-color: rgba(255,107,107,0.5); }
-  .tchip.sideways { color: var(--violet-soft); border-color: rgba(63,199,184,0.4); }
+  .tchip.sideways { color: var(--violet-soft); border-color: rgba(143,176,214,0.4); }
   .tchip.hot { color: #F5B870; border-color: rgba(245,184,112,0.55); }
-  .tchip.regime { color: var(--violet-soft); border-color: rgba(63,199,184,0.4); }
+  .tchip.regime { color: var(--violet-soft); border-color: rgba(143,176,214,0.4); }
   .tstat { color: var(--muted); font-size: 13px; }
   .tstat b { font-family: "IBM Plex Mono", monospace; color: var(--paper); font-weight: 500; }
   .tstat b.up { color: var(--up); } .tstat b.down { color: var(--down); }
@@ -253,8 +253,8 @@
   .movesub { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 18px; }
   .seg { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
   .seg button { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 500; font-family: "Inter", sans-serif; cursor: pointer; transition: all 0.15s; }
-  .seg button:hover { border-color: rgba(63,199,184,0.4); color: var(--paper); }
-  .seg button.active { background: rgba(63,199,184,0.15); border-color: var(--violet); color: var(--violet-soft); }
+  .seg button:hover { border-color: rgba(143,176,214,0.4); color: var(--paper); }
+  .seg button.active { background: rgba(143,176,214,0.15); border-color: var(--violet); color: var(--violet-soft); }
   .fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
   @media (max-width: 480px) { .fields { grid-template-columns: 1fr; } }
   .fields label { display: flex; flex-direction: column; gap: 6px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
@@ -283,8 +283,8 @@
   body::before {
     content: ""; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
     background:
-      radial-gradient(600px 480px at 30% 22%, rgba(63,199,184,0.10), transparent 60%),
-      radial-gradient(560px 520px at 72% 78%, rgba(63,199,184,0.08), transparent 60%);
+      radial-gradient(600px 480px at 30% 22%, rgba(143,176,214,0.10), transparent 60%),
+      radial-gradient(560px 520px at 72% 78%, rgba(143,176,214,0.08), transparent 60%);
     animation: lida-drift 26s ease-in-out infinite alternate;
   }
   @keyframes lida-drift {
@@ -297,7 +297,7 @@
   .read.thinking { position: relative; overflow: hidden; color: var(--violet-soft); font-family: "IBM Plex Mono", monospace; font-size: 14px; }
   .read.thinking::after {
     content: ""; position: absolute; inset: 0;
-    background: linear-gradient(100deg, transparent 18%, rgba(63,199,184,0.12) 50%, transparent 82%);
+    background: linear-gradient(100deg, transparent 18%, rgba(143,176,214,0.12) 50%, transparent 82%);
     transform: translateX(-100%); animation: lida-scan 1.6s ease-in-out infinite;
   }
   @keyframes lida-scan { to { transform: translateX(100%); } }

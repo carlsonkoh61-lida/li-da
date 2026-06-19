@@ -15,8 +15,8 @@
   body {
     background-color: var(--bg);
     background-image:
-      radial-gradient(900px 620px at 78% -12%, rgba(63,199,184,0.12), transparent 60%),
-      radial-gradient(820px 720px at 16% 112%, rgba(63,199,184,0.10), transparent 60%);
+      radial-gradient(900px 620px at 78% -12%, rgba(143,176,214,0.12), transparent 60%),
+      radial-gradient(820px 720px at 16% 112%, rgba(143,176,214,0.10), transparent 60%);
     background-attachment: fixed; color: var(--paper);
     font-family: "Inter", system-ui, sans-serif;
     min-height: 100vh; display: flex; flex-direction: column; align-items: center;
@@ -47,13 +47,13 @@
 
   .entry { background: var(--panel); backdrop-filter: blur(16px) saturate(125%); border: 1px solid var(--line); border-radius: 16px; padding: 22px; margin-bottom: 14px;
     box-shadow: 0 12px 44px -14px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05); transition: transform 0.2s, border-color 0.2s; }
-  .entry:hover { transform: translateY(-2px); border-color: rgba(63,199,184,0.22); }
+  .entry:hover { transform: translateY(-2px); border-color: rgba(143,176,214,0.22); }
   .e-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
   .e-sym { font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 19px; letter-spacing: 0.02em; }
   .e-badge { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); }
   .e-badge.buy { color: var(--up); border-color: rgba(74,222,154,0.5); }
   .e-badge.sell { color: var(--down); border-color: rgba(255,107,107,0.5); }
-  .e-badge.watch { color: var(--violet-soft); border-color: rgba(63,199,184,0.5); }
+  .e-badge.watch { color: var(--violet-soft); border-color: rgba(143,176,214,0.5); }
   .e-badge.skip { color: var(--muted); }
   .e-date { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); margin-left: auto; }
 
@@ -77,12 +77,12 @@
   .empty, .error { color: var(--muted); font-size: 15px; text-align: center; padding: 40px 0; }
   .error { color: var(--down); }
   .loading { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 14px; text-align: center; padding: 40px 0; }
-  .coach-card { background: var(--panel); backdrop-filter: blur(16px) saturate(125%); border: 1px solid rgba(63,199,184,0.22); border-radius: 16px; padding: 22px; margin-bottom: 20px; box-shadow: 0 12px 44px -14px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05); }
+  .coach-card { background: var(--panel); backdrop-filter: blur(16px) saturate(125%); border: 1px solid rgba(143,176,214,0.22); border-radius: 16px; padding: 22px; margin-bottom: 20px; box-shadow: 0 12px 44px -14px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05); }
   .coach-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
   .coach-title { font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 18px; }
   .coach-sub { color: var(--muted); font-size: 13px; margin-top: 3px; line-height: 1.4; max-width: 360px; }
-  .coach-btn { background: rgba(63,199,184,0.16); border: 1px solid var(--violet); color: var(--violet-soft); border-radius: 10px; padding: 9px 16px; font-family: "IBM Plex Mono", monospace; font-size: 13px; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
-  .coach-btn:hover:not(:disabled) { background: rgba(63,199,184,0.28); }
+  .coach-btn { background: rgba(143,176,214,0.16); border: 1px solid var(--violet); color: var(--violet-soft); border-radius: 10px; padding: 9px 16px; font-family: "IBM Plex Mono", monospace; font-size: 13px; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+  .coach-btn:hover:not(:disabled) { background: rgba(143,176,214,0.28); }
   .coach-btn:disabled { opacity: 0.6; cursor: default; }
   .coach-loading { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 13px; padding: 18px 0; }
   .coach-err { color: var(--down); font-size: 14px; padding: 14px 0; }
@@ -100,9 +100,9 @@
   .pat-top { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .pat-ev { color: var(--muted); font-size: 13px; line-height: 1.5; margin-top: 4px; }
   .conf { font-family: "IBM Plex Mono", monospace; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
-  .conf.emerging { color: var(--violet-soft); border-color: rgba(63,199,184,0.4); }
+  .conf.emerging { color: var(--violet-soft); border-color: rgba(143,176,214,0.4); }
   .conf.clear { color: var(--up); border-color: rgba(74,222,154,0.5); }
-  .coach-one { margin-top: 18px; padding: 14px 16px; background: rgba(63,199,184,0.1); border: 1px solid rgba(63,199,184,0.3); border-radius: 12px; font-size: 14px; line-height: 1.5; }
+  .coach-one { margin-top: 18px; padding: 14px 16px; background: rgba(143,176,214,0.1); border: 1px solid rgba(143,176,214,0.3); border-radius: 12px; font-size: 14px; line-height: 1.5; }
   .coach-one span { display: block; font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--violet-soft); margin-bottom: 5px; }
   .foot { margin-top: 40px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 20px; line-height: 1.55; }
 </style>

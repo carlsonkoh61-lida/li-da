@@ -103,19 +103,22 @@
 
   /* ---- the read ---- */
   .read.thinking { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 14px; }
-  /* signature: the signal module */
-  .signal-module {
-    display: flex; align-items: center; gap: 14px; padding: 15px 18px; border-radius: 14px;
-    background: linear-gradient(135deg, rgba(143,176,214,0.16), rgba(143,176,214,0.03));
-    border: 1px solid rgba(143,176,214,0.35); margin-bottom: 18px;
-  }
-  .signal-module .sm-label { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
-  .signal-module .sm-lean { font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 23px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--violet-soft); margin-right: auto; }
-  .signal-module .sm-conf { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 5px 11px; border: 1px solid var(--line); border-radius: 999px; }
-  .signal-module.conf-low { box-shadow: 0 0 12px -4px rgba(143,176,214,0.2); }
-  .signal-module.conf-medium { box-shadow: 0 0 20px -4px rgba(143,176,214,0.34); border-color: rgba(143,176,214,0.45); }
-  .signal-module.conf-high { border-color: rgba(143,176,214,0.6); animation: pulse 3.4s ease-in-out infinite; }
-  @keyframes pulse { 0%,100% { box-shadow: 0 0 22px -4px rgba(143,176,214,0.42); } 50% { box-shadow: 0 0 38px 0 rgba(143,176,214,0.62); } }
+  /* signature: the read signal — confidence ring + bull/bear meter */
+  .signal2 { display: flex; align-items: center; gap: 20px; padding: 16px 18px; border-radius: 14px; background: rgba(143,176,214,0.05); border: 1px solid var(--line); margin-bottom: 16px; flex-wrap: wrap; }
+  .ring { position: relative; width: 84px; height: 84px; flex: none; }
+  .ring svg { display: block; }
+  .ring .rc { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+  .ring .rc b { font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 14px; line-height: 1; }
+  .ring .rc span { font-family: "IBM Plex Mono", monospace; font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+  .sig-main { flex: 1; min-width: 220px; }
+  .sig-top { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+  .sig-leanlabel { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+  .sig-lean { font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 24px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--ink); }
+  .meter-poles { display: flex; justify-content: space-between; font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 7px; }
+  .meter-poles .bear { color: var(--down); } .meter-poles .bull { color: var(--up); }
+  .meter-track { position: relative; height: 8px; border-radius: 999px; background: linear-gradient(90deg, rgba(217,112,107,0.30), rgba(122,132,151,0.18), rgba(95,181,140,0.30)); }
+  .meter-center { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: rgba(255,255,255,0.25); }
+  .meter-marker { position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); border: 2px solid var(--surface); box-shadow: 0 0 0 1px rgba(143,176,214,0.6); transform: translate(-50%,-50%); transition: left 0.5s cubic-bezier(.2,.7,.2,1); }
 
   .conf-reason { font-size: 13px; color: var(--muted); line-height: 1.45; margin-bottom: 18px; }
   .read-summary { font-family: "Space Grotesk", sans-serif; font-weight: 500; font-size: 20px; line-height: 1.36; margin-bottom: 22px; letter-spacing: -0.01em; }
@@ -462,13 +465,34 @@
         </div>`
       : "";
     const conf = (r.confidence || "low").toLowerCase();
+    const C = "213.6";
+    const ringFrac = { low: 0.34, medium: 0.67, high: 1 }[conf] || 0.34;
+    const ringCol = { low: "var(--accent-deep)", medium: "var(--accent)", high: "var(--gold)" }[conf] || "var(--accent)";
+    const dashoff = (213.6 * (1 - ringFrac)).toFixed(1);
+    const confWord = conf.charAt(0).toUpperCase() + conf.slice(1);
+    const lean = (r.lean || "hold").toLowerCase();
+    const leanDir = lean === "buy" ? 1 : lean === "sell" ? -1 : 0;
+    const confMag = { low: 0.4, medium: 0.7, high: 1 }[conf] || 0.4;
+    const markerPct = Math.round((((leanDir * confMag) + 1) / 2) * 100);
     return `
       <div class="read show">
         <div class="card-eyebrow">The read</div>
-        <div class="signal-module conf-${esc(conf)}">
-          <span class="sm-label">Lean</span>
-          <span class="sm-lean">${esc(r.lean || "—")}</span>
-          <span class="sm-conf">${esc(r.confidence || "—")} confidence</span>
+        <div class="signal2">
+          <div class="ring">
+            <svg viewBox="0 0 84 84" width="84" height="84" aria-hidden="true">
+              <circle cx="42" cy="42" r="34" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="6"></circle>
+              <circle cx="42" cy="42" r="34" fill="none" stroke="${ringCol}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${dashoff}" transform="rotate(-90 42 42)"></circle>
+            </svg>
+            <div class="rc"><b style="color:${ringCol}">${esc(confWord)}</b><span>Confidence</span></div>
+          </div>
+          <div class="sig-main">
+            <div class="sig-top"><span class="sig-leanlabel">Li-Da leans</span><span class="sig-lean">${esc(r.lean || "\u2014")}</span></div>
+            <div class="meter-poles"><span class="bear">Bear</span><span class="bull">Bull</span></div>
+            <div class="meter-track">
+              <div class="meter-center"></div>
+              <div class="meter-marker" style="left:${markerPct}%"></div>
+            </div>
+          </div>
         </div>
         <div class="conf-reason">${esc(r.confidence_reason || "")}</div>
         <div class="read-summary">${esc(r.summary || "")}</div>

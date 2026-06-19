@@ -1,0 +1,58 @@
+/*
+  lida.css — Li-Da's shared design system (Terminal Pro).
+
+  ONE source of truth for the whole app's look. Every page links this file and
+  uses these tokens, so the design can never drift apart again — change a value
+  here and every screen updates together.
+
+  Direction: "Terminal Pro" — a cool, precise research instrument. Dense,
+  engineered, trustworthy through rigor. Teal signal accent on deep cool ink.
+*/
+:root {
+  /* ---- canonical tokens ---- */
+  --bg:          #0C0F16;   /* deep cool terminal ink */
+  --bg-2:        #090B11;   /* deepest (page edges, wells) */
+  --surface:     #151B28;   /* raised panels / cards */
+  --surface-2:   #0F1420;   /* inset / secondary surface */
+  --line:        rgba(255,255,255,0.08);
+  --line-strong: rgba(255,255,255,0.14);
+  --ink:         #DCE3F0;   /* primary text */
+  --ink-dim:     #AEB7C9;   /* secondary-bright text */
+  --muted:       #687388;   /* muted labels */
+  --accent:      #3FC7B8;   /* teal signal — the brand */
+  --accent-dim:  #7FE0D5;
+  --accent-deep: #1E8478;
+  --up:          #46B883;   /* market up / bull */
+  --down:        #E0655F;   /* market down / bear */
+  --warn:        #C99A4E;   /* caution / running hot */
+
+  /* ---- type roles ---- */
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body:    "Inter", system-ui, sans-serif;
+  --font-mono:    "IBM Plex Mono", ui-monospace, monospace;
+
+  /* ---- shape ---- */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+
+  /* ---- aliases: keep existing page styles working, re-themed ---- */
+  --panel:       var(--surface);
+  --panel2:      var(--surface-2);
+  --paper:       var(--ink);
+  --violet:      var(--accent);
+  --violet-2:    var(--accent-dim);
+  --violet-soft: var(--accent-dim);
+  --brand:       var(--accent);
+  --amber:       var(--warn);
+}
+
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+::selection { background: var(--accent); color: var(--bg); }
+
+/* subtle, consistent scrollbar across the app */
+* { scrollbar-color: var(--line-strong) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; }
+::-webkit-scrollbar-track { background: transparent; }

@@ -301,6 +301,57 @@ function buildInsider(raw) {
   return out;
 }
 
+// ---- shared read cache --------------------------------------------------
+// /api/analyze is the costliest endpoint (~17 Finnhub calls + an Anthropic
+// call per read). We cache each completed read by symbol for 15 minutes and
+// share it across ALL users — a read is market analysis, not personal data,
+// so one AAPL read serves everyone. State lives in Supabase (the `analyze_cache`
+// table) because Vercel functions are stateless; we use the SERVICE key, which
+// bypasses RLS, exactly like check-alerts.js. Cache failures NEVER break a read.
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+async function readCache(symbol) {
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SERVICE = process.env.SUPABASE_SERVICE_KEY;
+  if (!SUPABASE_URL || !SERVICE) return null;
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/analyze_cache?symbol=eq.${encodeURIComponent(symbol)}&select=payload,created_at`,
+      { headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}` } }
+    );
+    if (!r.ok) return null;
+    const rows = await r.json();
+    if (!Array.isArray(rows) || !rows.length) return null;
+    const ageMs = Date.now() - new Date(rows[0].created_at).getTime();
+    if (ageMs > CACHE_TTL_MS) return null; // stale → treat as a miss
+    return { payload: rows[0].payload, ageMs };
+  } catch (e) {
+    return null; // any cache trouble → just run the read fresh
+  }
+}
+
+async function writeCache(symbol, payload) {
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SERVICE = process.env.SUPABASE_SERVICE_KEY;
+  if (!SUPABASE_URL || !SERVICE) return;
+  try {
+    // Upsert on the symbol primary key (resolution=merge-duplicates), refreshing
+    // created_at so the 15-minute window restarts from this read.
+    await fetch(`${SUPABASE_URL}/rest/v1/analyze_cache`, {
+      method: "POST",
+      headers: {
+        apikey: SERVICE,
+        Authorization: `Bearer ${SERVICE}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({ symbol, payload, created_at: new Date().toISOString() }),
+    });
+  } catch (e) {
+    /* a failed cache write must never break the read — swallow it */
+  }
+}
+
 export default async function handler(req, res) {
   const _auth = await verifyUser(req);
   if (!_auth.ok) return res.status(_auth.code).json({ error: _auth.msg });
@@ -314,6 +365,12 @@ export default async function handler(req, res) {
   if (!ANTHROPIC) return res.status(500).json({ error: "ANTHROPIC_API_KEY isn't set in Vercel yet." });
 
   try {
+    // Cache hit? Serve the shared read straight back (no Finnhub / Anthropic calls).
+    const hit = await readCache(symbol);
+    if (hit) {
+      return res.status(200).json({ ...hit.payload, cached: true, cachedAgeSec: Math.round(hit.ageMs / 1000) });
+    }
+
     const base = "https://finnhub.io/api/v1";
     const today = new Date();
     const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -413,7 +470,9 @@ export default async function handler(req, res) {
     let read;
     try { read = JSON.parse(text); } catch (e) { return res.status(502).json({ error: "Claude's reply wasn't in the expected format. Try again." }); }
 
-    return res.status(200).json({ symbol, read, news, figures, analyst, peers, technicals, hype, regime, redFlags, earnings, insider });
+    const result = { symbol, read, news, figures, analyst, peers, technicals, hype, regime, redFlags, earnings, insider };
+    await writeCache(symbol, result); // share this read for the next 15 min
+    return res.status(200).json({ ...result, cached: false });
   } catch (err) {
     return res.status(500).json({ error: "Something went wrong running the read. Try again in a moment." });
   }

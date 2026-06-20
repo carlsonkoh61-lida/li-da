@@ -35,6 +35,36 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: `No data for "${symbol}". Check the ticker.` });
     }
 
+    // ---- data sanity guard --------------------------------------------------
+    // Finnhub's free tier silently serves stale or frozen prices for delisted /
+    // defunct tickers (e.g. MVPS, a dead ETF stuck at its last trade). Rather
+    // than pass a wrong number through as if it were live, we flag it so the
+    // Desk can warn honestly. We DON'T block — the user still sees the number,
+    // just with a caution. (CLAUDE.md: honest about bad data, never fabricate.)
+    const STALE_DAYS = 5; // generous — clears normal weekend / holiday gaps
+
+    let stale = false;
+    let staleReason = "";
+
+    // Missing core fields → we can't trust the quote at all.
+    if (quote.pc == null || quote.c == null) {
+      stale = true;
+      staleReason = "core price fields are missing from the data feed";
+    } else if (quote.t) {
+      // quote.t is the quote's own timestamp, in Unix SECONDS.
+      const ageMs = Date.now() - quote.t * 1000;
+      const ageDays = ageMs / 86400000;
+      if (ageDays > STALE_DAYS) {
+        stale = true;
+        const whole = Math.floor(ageDays);
+        staleReason = `last trade was ${whole} day${whole === 1 ? "" : "s"} ago — the ticker may be delisted or defunct`;
+      }
+    } else {
+      // No timestamp at all is itself a red flag for a supposedly-live quote.
+      stale = true;
+      staleReason = "the data feed returned no trade timestamp";
+    }
+
     return res.status(200).json({
       symbol,
       name: profile.name || symbol,
@@ -47,6 +77,9 @@ export default async function handler(req, res) {
       low: quote.l,
       open: quote.o,
       prevClose: quote.pc,
+      quoteTime: quote.t ? new Date(quote.t * 1000).toISOString() : null, // the quote's own timestamp
+      stale,               // true when the data looks frozen/defunct — see staleReason
+      staleReason,         // short human-readable reason, empty when not stale
       asOf: new Date().toISOString(),
     });
   } catch (err) {

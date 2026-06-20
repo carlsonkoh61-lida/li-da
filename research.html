@@ -35,7 +35,14 @@
   }
   .sub { color: var(--muted); font-size: 15px; line-height: 1.55; margin-bottom: 34px; }
 
-  .row { display: flex; gap: 10px; }
+  .row { display: flex; gap: 10px; position: relative; }
+  .acdd { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 14px 36px -14px rgba(0,0,0,0.65); display: none; }
+  .acdd.show { display: block; }
+  .acdd .opt { display: flex; align-items: baseline; gap: 12px; padding: 11px 14px; cursor: pointer; border-bottom: 1px solid var(--line); }
+  .acdd .opt:last-child { border-bottom: none; }
+  .acdd .opt:hover, .acdd .opt.active { background: rgba(143,176,214,0.10); }
+  .acdd .opt .s { font-family: "IBM Plex Mono", monospace; font-size: 14px; color: var(--accent); letter-spacing: 0.06em; flex: none; min-width: 60px; }
+  .acdd .opt .n { font-size: 13px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   input.symbol {
     flex: 1; background: rgba(20,24,38,0.6); border: 1px solid var(--line); border-radius: 12px;
     color: var(--paper); font-family: "IBM Plex Mono", monospace; font-size: 16px;
@@ -370,8 +377,9 @@
     <p class="sub">A live quote, an honest read, the news distilled — then you set your exits and log the call.</p>
 
     <div class="row">
-      <input id="symbol" class="symbol" placeholder="Ticker, e.g. AAPL" autocomplete="off" spellcheck="false" />
+      <input id="symbol" class="symbol" placeholder="Company or ticker, e.g. Amazon" autocomplete="off" spellcheck="false" />
       <button id="go" class="primary">Get read</button>
+      <div id="acdd" class="acdd"></div>
     </div>
 
     <div id="out"></div>
@@ -1098,14 +1106,26 @@
     }
   }
 
-  async function getRead() {
+  async function getRead(opts) {
+    opts = opts || {};
     const sym = input.value.trim().toUpperCase();
     if (!sym) { input.focus(); return; }
     btn.disabled = true; btn.textContent = "Reading\u2026"; out.innerHTML = ""; ctx = null;
     try {
       const res = await fetch("/api/market?symbol=" + encodeURIComponent(sym));
       const d = await res.json();
-      if (!res.ok) { out.innerHTML = `<p class="error">${esc(d.error || "Something went wrong.")}</p>`; return; }
+      if (!res.ok) {
+        // Name -> ticker fallback: if what they typed isn't a ticker, resolve it once.
+        if (!opts.resolved) {
+          const match = await resolveSymbol(input.value.trim());
+          if (match && match.symbol && match.symbol.toUpperCase() !== sym) {
+            input.value = match.symbol;
+            return getRead({ resolved: true });
+          }
+        }
+        out.innerHTML = `<p class="error">${esc(d.error || "Something went wrong.")} Try a company name or ticker.</p>`;
+        return;
+      }
       ctx = { symbol: sym, price: d.price, read: null };
       out.innerHTML = priceCard(d);
       out.insertAdjacentHTML("beforeend", '<div class="chart-card show" id="chartcard"><div class="chart-loading">loading chart…</div></div>');
@@ -1118,8 +1138,73 @@
     }
   }
 
+  async function resolveSymbol(q) {
+    try {
+      const res = await fetch("/api/search?q=" + encodeURIComponent(q));
+      const d = await res.json();
+      return (d.results && d.results[0]) || null;
+    } catch (e) { return null; }
+  }
+
   btn.addEventListener("click", getRead);
-  input.addEventListener("keydown", (e) => { if (e.key === "Enter") getRead(); });
+
+  // ---- name -> ticker autocomplete ----
+  const acdd = document.getElementById("acdd");
+  let acItems = [], acIndex = -1, acTimer = null, acSeq = 0;
+
+  function hideAC() { acdd.classList.remove("show"); acdd.innerHTML = ""; acItems = []; acIndex = -1; }
+
+  function renderAC() {
+    if (!acItems.length) { hideAC(); return; }
+    acdd.innerHTML = acItems.map((r, i) =>
+      `<div class="opt${i === acIndex ? " active" : ""}" data-i="${i}"><span class="s">${esc(r.symbol)}</span><span class="n">${esc(r.name)}</span></div>`
+    ).join("");
+    acdd.classList.add("show");
+    acdd.querySelectorAll(".opt").forEach((el) => {
+      el.addEventListener("mousedown", (ev) => { ev.preventDefault(); pickAC(parseInt(el.dataset.i, 10)); });
+    });
+  }
+
+  function pickAC(i) {
+    const r = acItems[i];
+    if (!r) return;
+    input.value = r.symbol;
+    hideAC();
+    getRead();
+  }
+
+  async function searchAC(q) {
+    const seq = ++acSeq;
+    try {
+      const res = await fetch("/api/search?q=" + encodeURIComponent(q));
+      const d = await res.json();
+      if (seq !== acSeq) return; // ignore stale responses
+      acItems = (d.results || []).slice(0, 8);
+      acIndex = -1;
+      renderAC();
+    } catch (e) { /* leave as-is */ }
+  }
+
+  input.addEventListener("input", () => {
+    const q = input.value.trim();
+    clearTimeout(acTimer);
+    if (q.length < 2) { hideAC(); return; }
+    acTimer = setTimeout(() => searchAC(q), 220);
+  });
+
+  input.addEventListener("keydown", (e) => {
+    const open = acdd.classList.contains("show") && acItems.length;
+    if (open) {
+      if (e.key === "ArrowDown") { e.preventDefault(); acIndex = Math.min(acIndex + 1, acItems.length - 1); renderAC(); return; }
+      if (e.key === "ArrowUp") { e.preventDefault(); acIndex = Math.max(acIndex - 1, 0); renderAC(); return; }
+      if (e.key === "Escape") { e.preventDefault(); hideAC(); return; }
+      if (e.key === "Enter") { e.preventDefault(); pickAC(acIndex >= 0 ? acIndex : 0); return; }
+    }
+    if (e.key === "Enter") { hideAC(); getRead(); }
+  });
+
+  document.addEventListener("click", (e) => { if (!e.target.closest(".row")) hideAC(); });
+
   input.focus();
 
   // Auto-pull a read when a ticker is passed in the URL (e.g. tapped from the Watchlist).

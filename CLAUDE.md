@@ -121,3 +121,48 @@ From the strategy stress-test, in order:
 - **Resend** silently drops fake test emails — always test with a real inbox.
 - **The "Dangerous" browser warning** comes from the shared `vercel.app` domain flagging credential forms — fixed only by a custom domain.
 - Three hard external dependencies with no fallback: Finnhub (down → app dead), Twelve Data (charts), Anthropic (reads).
+
+---
+
+## Phase 2 — Personalization & the moat (vision; build AFTER Phase 0 hardening)
+
+> This is Li-Da's north star and its real defensibility. The data (prices, fundamentals) is **rented** — anyone can buy the same feed and call the same model. The moat is **each user's own accumulated history**, owned by Li-Da and impossible for a competitor to clone. A rival who copies the plumbing gets a blank-slate model; Li-Da arrives already knowing the user. Build everything here in service of that.
+
+### The core idea, stated honestly (read this before building anything here)
+
+"Different users have different Li-Da — an assistant that knows *them* and gets sharper the more they use it." This is achievable and is the goal. But the mechanism is **per-user memory, NOT per-user model training**:
+
+- **There is ONE shared base model (Claude via the user's BYOK Anthropic key). Do NOT fine-tune or train a per-user model.** That is out of scope, ruinously expensive, and impossible on this stack. Any task that proposes training/fine-tuning is wrong — stop and flag it.
+- What differs per user is the **context injected into the prompt.** Li-Da accumulates the user's history in Supabase, distills it into a compact per-user **behavioral profile** (a few hundred tokens), and injects that profile into the read. Same model, different memory → it behaves like *their* Li-Da.
+- The "self-learning" / "gets to know you" quality lives in the **database**, not in model weights. The profile updates each time the user logs a call. The system learns; the model doesn't.
+- **Cost rule:** never feed a user's full raw history into a read. Maintain and inject the compact profile only; refresh it on write, not on every read. Re-reading 90 days of calls per request is the bankrupt pattern.
+
+### The three pillars (build in this order)
+
+**Pillar A — "What's making you hesitate?" (the intake valve).**
+Before/with a read, ask the user to name their actual doubt (e.g. "it already ran too far," "I'm scared I'm late," "I don't trust the earnings"). The analysis then answers *that specific doubt* with evidence for and against it — caring, personal, not a generic report. Crucially, the user's answer is a **labeled data point** (their fear, on this ticker, at this moment, with the outcome to follow) — so this feature is the primary intake that feeds Pillar B. Build it partly to populate the history.
+
+**Pillar B — History-aware, personalized reads (the moat turning on).**
+When a user pulls a read, fetch *their* compact behavioral profile and inject it so the read is tailored to them: e.g. "You've pulled three momentum names near local highs and tend to hold winners too long — here's what's similar and different this time."
+- **Mirror behavior, never predict outcomes.** Honest framing is "I've noticed a tendency to…", grounded in *their own* past actions. NEVER "you'll lose on this" or "the data proves you lose X% of the time" — that is the oracle trap and it also misrepresents a tiny sample. Qualitative patterns, stated with humility. A few months of calls is a SMALL sample — say so.
+- This is retrieval-augmented personalization over `research_log`, summarized into the profile. It is the single most defensible thing Li-Da builds.
+
+**Pillar C — Proactive "Jarvis" nudges (USP, but the most dangerous to cost).**
+Reach out when something a user researched moves (e.g. "a stock you read two weeks ago dropped 8% — want a fresh read?"). Leverages the existing `check-alerts.js` + Resend infra and the history moat. **Hard cost guardrail:**
+- The **trigger must be cheap and deterministic** — a price level crossing, computed in code, essentially free. Do NOT run scheduled AI reads across every user × every watched ticker — that auto-burns Finnhub + Anthropic budget and bankrupts the app.
+- The **expensive AI re-read fires only when the user CLICKS the notification.** Jarvis taps the shoulder for free; he only does the costly thinking when asked.
+- "Real-time" is realistically "periodic check → notification" on a browser-only/email stack. Don't promise users instant push and deliver every-15-minutes.
+
+### Architecture moves this implies
+
+- **Remove the NOVA voice orb as the home page; make the Desk the home** and the central surface (consistent with Phase 0 priority #7). The orb is a v2 drop, not the entry point.
+- Evolve the Desk from one-shot tool → a place the user can prompt within. Stage honestly: (1) Desk-as-home + richer logging; (2) profile-injected reads; (3) a conversational "ask Li-Da about your patterns" surface — pillar 3 is a real v2 shift from tool to assistant, not a quick edit.
+- New Supabase state (RLS, service-key pattern like `analyze_cache`): a per-user `profile` (the distilled behavioral summary), updated on each logged call.
+
+### Why the boring Phase 0 work is the foundation (not a detour)
+
+The cache and per-user rate limiter being built now are exactly what make per-user personalization and proactive nudges *affordable*. You cannot run a per-user assistant on a stack with no cost controls. Phase 0 lays the rails for Phase 2.
+
+### What this is NOT
+
+Not a predictor, not an oracle, not a per-user trained model, not real-time push, not directional advice on regulated local (Bursa) securities. It is a partner that knows *you* — your patterns, your blind spots, your specific doubt — built on data you own and a competitor can't clone.

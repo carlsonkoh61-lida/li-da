@@ -352,6 +352,70 @@ async function writeCache(symbol, payload) {
   }
 }
 
+// ---- per-user hourly rate limit ----------------------------------------
+// Caps expensive FRESH reads per user per clock-hour, so one account can't run
+// up the Anthropic / Finnhub bill. Cache hits never reach here — they're served
+// (and counted as free) before this runs. Caps live in code so they're easy to
+// tune; tier defaults to 'free' when a user has no row in user_tier. State lives
+// in Supabase (analyze_usage); we use the SERVICE key, like the cache.
+// FAIL OPEN: if the check itself errors, we ALLOW the read — a real person must
+// never be locked out by a DB hiccup.
+const TIER_CAPS = { free: 25, paid: 200 }; // reads per hour
+const FREE_CAP = 25;
+
+// Start of the current clock hour in UTC — equivalent to date_trunc('hour', now())
+// under Supabase's default UTC session. This is the window key.
+function hourWindowISO() {
+  const d = new Date();
+  d.setUTCMinutes(0, 0, 0);
+  return d.toISOString();
+}
+
+async function checkRateLimit(userId) {
+  const windowStart = hourWindowISO();
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SERVICE = process.env.SUPABASE_SERVICE_KEY;
+  // No user id / not configured → fail open (allow).
+  if (!userId || !SUPABASE_URL || !SERVICE) return { allowed: true, windowStart, used: 0 };
+  try {
+    const headers = { apikey: SERVICE, Authorization: `Bearer ${SERVICE}` };
+    const [tierRes, usageRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/user_tier?user_id=eq.${userId}&select=tier`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/analyze_usage?user_id=eq.${userId}&window_start=eq.${encodeURIComponent(windowStart)}&select=count`, { headers }),
+    ]);
+    let tier = "free";
+    if (tierRes.ok) { const t = await tierRes.json(); if (Array.isArray(t) && t[0] && t[0].tier) tier = String(t[0].tier).toLowerCase(); }
+    let used = 0;
+    if (usageRes.ok) { const u = await usageRes.json(); if (Array.isArray(u) && u[0] && typeof u[0].count === "number") used = u[0].count; }
+    const limit = TIER_CAPS[tier] || FREE_CAP;
+    return { allowed: used < limit, used, limit, tier, windowStart };
+  } catch (e) {
+    return { allowed: true, windowStart, used: 0 }; // fail open
+  }
+}
+
+// Bump the counter after a successful fresh read. Upserts (user_id, window_start)
+// to used+1. A failed write must NEVER break the read, so errors are swallowed.
+async function recordRead(userId, windowStart, used) {
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SERVICE = process.env.SUPABASE_SERVICE_KEY;
+  if (!userId || !SUPABASE_URL || !SERVICE) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/analyze_usage`, {
+      method: "POST",
+      headers: {
+        apikey: SERVICE,
+        Authorization: `Bearer ${SERVICE}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({ user_id: userId, window_start: windowStart, count: (used || 0) + 1 }),
+    });
+  } catch (e) {
+    /* fail open: never break the read on a counter write */
+  }
+}
+
 export default async function handler(req, res) {
   const _auth = await verifyUser(req);
   if (!_auth.ok) return res.status(_auth.code).json({ error: _auth.msg });
@@ -366,9 +430,22 @@ export default async function handler(req, res) {
 
   try {
     // Cache hit? Serve the shared read straight back (no Finnhub / Anthropic calls).
+    // Cache is checked FIRST so a hit is free and never counts against the limit.
     const hit = await readCache(symbol);
     if (hit) {
       return res.status(200).json({ ...hit.payload, cached: true, cachedAgeSec: Math.round(hit.ageMs / 1000) });
+    }
+
+    // Cache miss → this will be an expensive fresh read. Enforce the hourly cap
+    // BEFORE doing any work, so a limited user spends nothing.
+    const rl = await checkRateLimit(_auth.user && _auth.user.id);
+    if (!rl.allowed) {
+      return res.status(429).json({
+        error: "You've reached your hourly read limit — upgrade to read more.",
+        limit: rl.limit,
+        used: rl.used,
+        tier: rl.tier,
+      });
     }
 
     const base = "https://finnhub.io/api/v1";
@@ -472,6 +549,7 @@ export default async function handler(req, res) {
 
     const result = { symbol, read, news, figures, analyst, peers, technicals, hype, regime, redFlags, earnings, insider };
     await writeCache(symbol, result); // share this read for the next 15 min
+    await recordRead(_auth.user && _auth.user.id, rl.windowStart, rl.used); // count this fresh read
     return res.status(200).json({ ...result, cached: false });
   } catch (err) {
     return res.status(500).json({ error: "Something went wrong running the read. Try again in a moment." });

@@ -1,0 +1,71 @@
+<svg width="100%" viewBox="0 0 680 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Li-Da system architecture diagram">
+<title>Li-Da — system architecture</title>
+<style>
+  text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .t { font-size: 14px; font-weight: 500; }
+  .ts { font-size: 12px; }
+  .title { font-size: 16px; font-weight: 600; }
+  .band { font-size: 12px; }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<rect x="0" y="0" width="680" height="440" fill="#FBFAF7"/>
+<text class="title" x="40" y="28" fill="#2C2C2A">Li-Da — system architecture</text>
+
+<rect x="40" y="44" width="600" height="76" rx="12" fill="none" stroke="#B4B2A9" stroke-width="0.8" stroke-dasharray="4 4"/>
+<text class="band" x="54" y="62" fill="#5F5E5A">Browser — what the user sees</text>
+<rect x="150" y="70" width="180" height="44" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.8"/>
+<text class="t" x="240" y="88" text-anchor="middle" dominant-baseline="central" fill="#2C2C2A">The Desk</text>
+<text class="ts" x="240" y="104" text-anchor="middle" dominant-baseline="central" fill="#5F5E5A">research.html · the core</text>
+<rect x="360" y="70" width="210" height="44" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.8"/>
+<text class="t" x="465" y="88" text-anchor="middle" dominant-baseline="central" fill="#2C2C2A">Other pages</text>
+<text class="ts" x="465" y="104" text-anchor="middle" dominant-baseline="central" fill="#5F5E5A">watchlist · alerts · journal</text>
+
+<rect x="40" y="158" width="600" height="76" rx="12" fill="none" stroke="#B4B2A9" stroke-width="0.8" stroke-dasharray="4 4"/>
+<text class="band" x="54" y="176" fill="#5F5E5A">Vercel · serverless /api  (your code — secret keys live here)</text>
+<rect x="53" y="182" width="106" height="44" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+<text class="t" x="106" y="198" text-anchor="middle" dominant-baseline="central" fill="#26215C">market</text>
+<text class="ts" x="106" y="214" text-anchor="middle" dominant-baseline="central" fill="#534AB7">live quote</text>
+<rect x="170" y="182" width="106" height="44" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="1.6"/>
+<text class="t" x="223" y="198" text-anchor="middle" dominant-baseline="central" fill="#26215C">analyze</text>
+<text class="ts" x="223" y="214" text-anchor="middle" dominant-baseline="central" fill="#534AB7">the AI read</text>
+<rect x="287" y="182" width="106" height="44" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+<text class="t" x="340" y="198" text-anchor="middle" dominant-baseline="central" fill="#26215C">chart</text>
+<text class="ts" x="340" y="214" text-anchor="middle" dominant-baseline="central" fill="#534AB7">price history</text>
+<rect x="404" y="182" width="106" height="44" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+<text class="t" x="457" y="198" text-anchor="middle" dominant-baseline="central" fill="#26215C">search</text>
+<text class="ts" x="457" y="214" text-anchor="middle" dominant-baseline="central" fill="#534AB7">name to ticker</text>
+<rect x="521" y="182" width="106" height="44" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+<text class="t" x="574" y="198" text-anchor="middle" dominant-baseline="central" fill="#26215C">alerts</text>
+<text class="ts" x="574" y="214" text-anchor="middle" dominant-baseline="central" fill="#534AB7">cron · email</text>
+
+<rect x="40" y="300" width="600" height="76" rx="12" fill="none" stroke="#B4B2A9" stroke-width="0.8" stroke-dasharray="4 4"/>
+<text class="band" x="54" y="318" fill="#5F5E5A">External services &amp; storage  (rented / outside)</text>
+<rect x="53" y="324" width="106" height="44" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.8"/>
+<text class="t" x="106" y="340" text-anchor="middle" dominant-baseline="central" fill="#04342C">Finnhub</text>
+<text class="ts" x="106" y="356" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">quotes · data</text>
+<rect x="170" y="324" width="106" height="44" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.8"/>
+<text class="t" x="223" y="340" text-anchor="middle" dominant-baseline="central" fill="#04342C">Twelve Data</text>
+<text class="ts" x="223" y="356" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">charts</text>
+<rect x="287" y="324" width="106" height="44" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.8"/>
+<text class="t" x="340" y="340" text-anchor="middle" dominant-baseline="central" fill="#04342C">Anthropic</text>
+<text class="ts" x="340" y="356" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">the read</text>
+<rect x="404" y="324" width="106" height="44" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.8"/>
+<text class="t" x="457" y="340" text-anchor="middle" dominant-baseline="central" fill="#04342C">Supabase</text>
+<text class="ts" x="457" y="356" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">database · auth</text>
+<rect x="521" y="324" width="106" height="44" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.8"/>
+<text class="t" x="574" y="340" text-anchor="middle" dominant-baseline="central" fill="#04342C">Resend</text>
+<text class="ts" x="574" y="356" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">email</text>
+
+<path d="M240 114 L223 180" fill="none" stroke="#BA7517" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M223 226 L120 322" fill="none" stroke="#BA7517" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M223 226 L335 322" fill="none" stroke="#BA7517" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M223 226 L450 322" fill="none" stroke="#BA7517" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M574 226 L574 322" fill="none" stroke="#888780" stroke-width="1.1" marker-end="url(#arrow)"/>
+
+<text class="ts" x="40" y="408" fill="#5F5E5A">Amber = pulling a read (Desk to analyze to data, AI, storage).   Grey = the scheduled alerts job.</text>
+</svg>

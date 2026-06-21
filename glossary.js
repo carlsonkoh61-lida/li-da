@@ -33,7 +33,12 @@
     overbought:   "The price has risen fast lately and may be due for a pause or pullback.",
     oversold:     "The price has fallen fast lately and may be due for a bounce.",
     premium:      "Pricier than similar companies — investors are paying up for it.",
-    discount:     "Cheaper than similar companies."
+    discount:     "Cheaper than similar companies.",
+    lean:         "Which way the evidence tilts — buy, sell, or hold. One honest input to weigh, not an instruction.",
+    confidence:   "How sure Li-Da is about its lean — low, medium, or high. A level, never a percentage.",
+    stop:         "A price where you'd sell to cap your loss if the trade goes against you.",
+    target:       "A price where you'd take some profit if the trade works out.",
+    riskReward:   "What you stand to gain versus lose — e.g. 2:1 means twice the potential reward as risk."
   };
 
   function esc(s) {

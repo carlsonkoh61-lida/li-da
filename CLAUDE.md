@@ -264,3 +264,13 @@ It is ONE coherent character, not two: **warm to *you*, sharp about the *market*
 > A Southeast Asia where anyone — wherever they live, however they started — can weigh both sides and decide with clarity, not hype. We won't make you rich or trade for you. We'll help you think honestly about your decisions, and get better at making them yourself.
 
 **The spirit underneath (for anyone writing copy):** AI is the *engine, not the pitch* — the thing that makes deep, honest analysis cheap enough to reach everyone, city or small town, first-timer or veteran. A bridge to clearer thinking, never a buzzword. Ambitious about *judgment and access*; humble about *outcomes*. Said quietly — an anti-hype brand doesn't need a slogan.
+
+---
+
+## Logo / mark (LOCKED — "The Point", Direction 1)
+
+The Li·Da mark is the **dot in the wordmark, rendered as a small diamond split two ways: steel-blue (the bull case) and brass-gold (the bear case).** It is the still point where the two sides meet — honest judgment held in balance, not a verdict pointing one way. The diamond alone is the app icon / favicon. Palette logic across the whole brand: **steel-blue = bull side, brass = bear side.**
+
+**SEA story (quiet, never loud — usable as brand copy):** the diamond echoes the *belah ketupat* — the diamond lattice woven into songket and batik, and the shape of the ketupat hung at the door for the open house, a sign of welcome. A humble, handmade, everyday form that belongs from a KL high-rise to a kampung kitchen — a woven shape for a tool meant to bridge ordinary people to clearer thinking. Abstract, never literal: the heritage lives in the *meaning*, not in ornament. No invented legend, no "ancient mystical symbol" overreach.
+
+Mascot stays a deliberate post-first-users project (warm but dignified; *is* Li-Da the friend). Wordmark + this mark carry launch.

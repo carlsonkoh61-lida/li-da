@@ -1,294 +1,227 @@
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Li-Da</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Li-Da · A plain-words read on any stock</title>
+<meta name="description" content="Li-Da reads a stock the slow way — the bull case and the bear case, side by side, in plain words. No tips, no predictions. Information, not financial advice." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/lida.css" />
 <style>
-  :root{
-    --bg:#05070d; --panel:rgba(14,20,34,.66); --line:rgba(120,180,255,.14);
-    --txt:#cfe2ff; --dim:#5d7298;
-    --idle:#3a6df0; --listen:#1fd1c4; --think:#f0a13a; --speak:#7a5cff; --glow:var(--idle);
+  /* Landing page — Li-Da's front door. Colors come ONLY from lida.css tokens. */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
   }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%}
-  body{
-    background:
-      radial-gradient(1200px 700px at 50% -10%, rgba(58,109,240,.12), transparent 60%),
-      radial-gradient(800px 600px at 80% 120%, rgba(122,92,255,.10), transparent 60%),
-      var(--bg);
-    color:var(--txt); font-family:'Sora',system-ui,sans-serif; min-height:100%;
-    display:flex;flex-direction:column;align-items:center;overflow-x:hidden;
+  .wrap { max-width: 460px; margin: 0 auto; padding: 20px 22px 40px; }
+
+  /* brand row */
+  .brand-row { display: flex; justify-content: space-between; align-items: center; }
+  .brand { font-family: var(--font-display); font-weight: 600; font-size: 19px; letter-spacing: 2px; color: var(--ink); display: inline-flex; align-items: center; gap: 5px; }
+  .diamond { position: relative; width: 13px; height: 15px; display: inline-block; margin: 0 1px; }
+  .diamond span { position: absolute; inset: 0; }
+  .diamond .d-r { clip-path: polygon(50% 8%, 100% 50%, 50% 92%); background: var(--gold); }
+  .diamond .d-l { clip-path: polygon(50% 8%, 0 50%, 50% 92%); background: var(--accent); }
+  .signin { font-size: 13px; color: var(--muted); text-decoration: none; }
+  .signin:hover { color: var(--ink-dim); }
+
+  /* the hook */
+  .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; color: var(--gold); margin: 30px 0 0; }
+  h1 { font-family: var(--font-display); font-weight: 600; font-size: 28px; line-height: 1.16; letter-spacing: -0.5px; color: var(--ink); margin: 14px 0 0; }
+  h1 .hype { color: var(--gold); }
+  .lede { font-size: 13.5px; line-height: 1.62; color: var(--muted); margin: 16px 0 0; }
+
+  /* the proof — example read */
+  .proof-row { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 2px; margin: 30px 0 11px; }
+  .proof-row .lbl { color: var(--muted); }
+  .example-tag { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); border: 1px solid var(--line-strong); border-radius: 5px; padding: 3px 8px; }
+  .example-tag .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); }
+
+  .card { background: var(--surface); border: 1px solid var(--line-strong); border-radius: 18px; padding: 17px; }
+  .co-row { display: flex; align-items: center; gap: 11px; }
+  .co-logo { width: 38px; height: 38px; border-radius: 10px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 12px; color: var(--accent); flex: none; }
+  .co-id { flex: 1; }
+  .co-name { font-size: 14.5px; font-weight: 600; color: var(--ink); }
+  .co-meta { font-size: 11px; color: var(--muted); font-family: var(--font-mono); margin-top: 2px; }
+  .co-px { font-size: 14.5px; font-weight: 600; font-family: var(--font-mono); text-align: right; color: var(--ink); }
+  .co-chg { font-size: 11px; color: var(--up); text-align: right; font-family: var(--font-mono); margin-top: 2px; }
+
+  .meter-poles { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; margin: 16px 0 6px; }
+  .meter-poles .bull { color: var(--accent); }
+  .meter-poles .bear { color: var(--down); }
+  .meter { height: 7px; border-radius: 4px; display: flex; overflow: hidden; background: var(--line-strong); }
+  .meter .m-bull { width: 45%; background: var(--accent); }
+  .meter .m-bear { width: 55%; background: var(--down); }
+  .lean-line { font-size: 12.5px; color: var(--ink-dim); margin: 11px 0 0; line-height: 1.5; }
+  .divider { height: 1px; background: var(--line); margin: 15px 0; }
+  .conf-row { display: flex; justify-content: space-between; align-items: baseline; }
+  .conf-row .k { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 1px; color: var(--muted); }
+  .conf-row .v { font-size: 13px; color: var(--ink); font-weight: 600; }
+  .point { display: flex; gap: 9px; font-size: 12.5px; line-height: 1.5; color: var(--ink-dim); }
+  .point + .point { margin-top: 11px; }
+  .point.first { margin-top: 13px; }
+  .point .pdot { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; flex: none; }
+  .point.bull .pdot { background: var(--accent); }
+  .point.bear .pdot { background: var(--down); }
+  .own-it { font-size: 12px; font-style: italic; color: var(--muted); margin: 15px 0 0; }
+
+  /* the action — reuses /api/search + the Desk read flow */
+  .action-lbl { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; color: var(--muted); margin: 28px 0 11px; }
+  .search { position: relative; z-index: 5; }
+  .search-row { display: flex; gap: 9px; }
+  .field { flex: 1; display: flex; align-items: center; gap: 9px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 13px; padding: 0 14px; height: 50px; }
+  .field svg { flex: none; }
+  .field input { flex: 1; min-width: 0; background: transparent; border: none; outline: none; color: var(--ink); font-family: var(--font-body); font-size: 13.5px; }
+  .field input::placeholder { color: var(--muted); }
+  .read-btn { border: none; background: var(--accent); color: var(--bg); font-weight: 600; font-size: 14px; border-radius: 13px; padding: 0 22px; height: 50px; font-family: var(--font-body); cursor: pointer; flex: none; }
+  .read-btn:hover { background: var(--accent-dim); }
+
+  .results { position: absolute; top: 58px; left: 0; right: 0; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 14px; overflow: hidden; box-shadow: 0 20px 40px -12px rgba(0,0,0,0.6); display: none; }
+  .results.show { display: block; }
+  .res { display: flex; align-items: center; gap: 12px; padding: 11px 14px; cursor: pointer; border-top: 1px solid var(--line); }
+  .res:first-child { border-top: none; }
+  .res:hover, .res.active { background: rgba(143,176,214,0.10); }
+  .res-tile { width: 30px; height: 30px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line-strong); display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-weight: 500; font-size: 11px; color: var(--accent); flex: none; }
+  .res-main { flex: 1; min-width: 0; }
+  .res-name { font-size: 13.5px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .res-sym { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+
+  /* trust + footer */
+  .trust { margin: 26px 0 0; padding: 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; text-align: center; font-size: 13px; color: var(--gold); }
+  .foot { text-align: center; font-size: 11px; color: var(--muted); padding: 18px 0 6px; }
+
+  @media (min-width: 600px) {
+    .wrap { padding-top: 40px; }
+    h1 { font-size: 31px; }
   }
-  body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.045;mix-blend-mode:overlay;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
-  header{width:100%;max-width:760px;display:flex;justify-content:space-between;align-items:center;
-    padding:22px 26px;letter-spacing:.42em;font-family:'Chakra Petch';font-weight:600;font-size:13px;color:var(--dim)}
-  header .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--glow);
-    box-shadow:0 0 12px var(--glow);margin-right:9px;vertical-align:middle;transition:background .4s}
-  header .right{display:flex;align-items:center;gap:14px}
-  header .v{font-size:11px;letter-spacing:.28em;color:rgba(93,114,152,.6)}
-  .gear{cursor:pointer;font-size:16px;color:var(--dim);letter-spacing:0;transition:.2s}
-  .gear:hover{color:var(--txt);transform:rotate(30deg)}
-
-  .stage{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:14px}
-  .orb-wrap{position:relative;width:230px;height:230px;display:grid;place-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
-  .ring{position:absolute;border-radius:50%;border:1px solid var(--glow);opacity:.25;transition:border-color .5s}
-  .r1{width:230px;height:230px;animation:spin 22s linear infinite}
-  .r2{width:178px;height:178px;border-style:dashed;opacity:.18;animation:spin 16s linear infinite reverse}
-  .r3{width:128px;height:128px;opacity:.4}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .core{width:96px;height:96px;border-radius:50%;
-    background:radial-gradient(circle at 35% 30%, #fff8, var(--glow) 42%, #0a0f1c 100%);
-    box-shadow:0 0 38px 4px var(--glow),inset 0 0 26px rgba(255,255,255,.18);transition:box-shadow .5s, background .5s}
-  body[data-state="idle"]   .core{animation:breathe 5s ease-in-out infinite}
-  body[data-state="listen"] .core{animation:pulse 1.1s ease-in-out infinite}
-  body[data-state="think"]  .core{animation:wobble 1.4s ease-in-out infinite}
-  body[data-state="speak"]  .core{animation:talk .5s ease-in-out infinite}
-  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
-  @keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 38px 4px var(--glow)}50%{transform:scale(1.14);box-shadow:0 0 60px 12px var(--glow)}}
-  @keyframes wobble{0%,100%{transform:scale(1) translateY(0)}33%{transform:scale(1.04) translateY(-3px)}66%{transform:scale(.98) translateY(2px)}}
-  @keyframes talk{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.18) scaleX(.96)}}
-
-  .status{font-family:'Chakra Petch';letter-spacing:.4em;font-size:13px;color:var(--glow);
-    text-transform:uppercase;transition:color .4s;min-height:18px}
-  .hint{font-size:12.5px;color:var(--dim);letter-spacing:.02em;text-align:center;padding:0 18px}
-  .controls{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap;justify-content:center}
-  button{font-family:'Chakra Petch';font-weight:600;letter-spacing:.12em;font-size:13px;color:var(--txt);
-    background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:13px 22px;cursor:pointer;
-    transition:.25s;backdrop-filter:blur(8px)}
-  button:hover{border-color:var(--glow);color:#fff;box-shadow:0 0 22px -6px var(--glow)}
-  button.primary{background:linear-gradient(180deg, rgba(58,109,240,.28), rgba(58,109,240,.10));border-color:rgba(120,180,255,.4)}
-  button.on{border-color:var(--listen);color:var(--listen);box-shadow:0 0 22px -6px var(--listen)}
-  button:disabled{opacity:.4;cursor:not-allowed}
-
-  .log{width:100%;max-width:680px;margin:30px auto 60px;padding:0 22px;display:flex;flex-direction:column;gap:14px}
-  .msg{padding:14px 17px;border-radius:15px;line-height:1.55;font-size:15px;max-width:86%;animation:rise .4s ease both;backdrop-filter:blur(6px)}
-  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-  .msg.you{align-self:flex-end;background:rgba(58,109,240,.16);border:1px solid rgba(120,180,255,.22)}
-  .msg.nova{align-self:flex-start;background:var(--panel);border:1px solid var(--line)}
-  .msg.err{align-self:flex-start;background:rgba(240,90,90,.12);border:1px solid rgba(240,120,120,.3)}
-  .msg .who{font-family:'Chakra Petch';font-size:10.5px;letter-spacing:.3em;color:var(--dim);margin-bottom:5px;text-transform:uppercase}
-  .empty{color:var(--dim);text-align:center;font-size:13.5px;line-height:1.7;padding-top:6px}
-  .empty code{background:rgba(120,180,255,.1);padding:2px 7px;border-radius:6px;color:var(--txt)}
-
-  /* settings / key gate */
-  .scrim{position:fixed;inset:0;background:rgba(3,5,11,.82);backdrop-filter:blur(6px);display:none;
-    place-items:center;z-index:50;padding:20px}
-  .scrim.show{display:grid}
-  .card{width:100%;max-width:460px;background:linear-gradient(180deg, rgba(18,26,44,.96), rgba(10,15,27,.96));
-    border:1px solid var(--line);border-radius:20px;padding:26px 26px 22px;box-shadow:0 30px 80px -20px #000}
-  .card h2{font-family:'Chakra Petch';letter-spacing:.18em;font-size:16px;margin-bottom:6px;color:#fff}
-  .card p{font-size:13px;line-height:1.6;color:var(--dim);margin-bottom:16px}
-  .card a{color:var(--listen);text-decoration:none;border-bottom:1px dotted var(--listen)}
-  .card label{display:block;font-family:'Chakra Petch';font-size:10.5px;letter-spacing:.28em;color:var(--dim);
-    margin:14px 0 7px;text-transform:uppercase}
-  .card input,.card select{width:100%;background:#070b15;border:1px solid var(--line);border-radius:11px;
-    color:var(--txt);font-family:'Sora';font-size:14px;padding:12px 14px;outline:none}
-  .card input:focus,.card select:focus{border-color:var(--idle)}
-  .card .row{display:flex;gap:10px;margin-top:20px}
-  .card .row button{flex:1}
-  .note{font-size:11px;color:#6b7a99;line-height:1.55;margin-top:14px;padding-top:13px;border-top:1px solid var(--line)}
 </style>
+</head>
+<body>
+  <div class="wrap">
 
-<header>
-  <span><span class="dot"></span>L I - D A</span>
-  <span class="right">
-    <span class="v" id="apiState">API · NOT SET</span>
-    <span class="gear" id="gear" title="Settings">⚙</span>
-  </span>
-</header>
-
-<div class="stage">
-  <div class="orb-wrap" id="orb" title="Click to talk">
-    <div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div>
-    <div class="core"></div>
-  </div>
-  <div class="status" id="status">Standby</div>
-  <div class="hint" id="hint">Click the orb and start talking</div>
-  <div class="controls">
-    <button class="primary" id="talkBtn">◉ HOLD A CONVERSATION</button>
-    <button id="handsfree">⟳ HANDS-FREE: OFF</button>
-    <button id="clearBtn">CLEAR</button>
-  </div>
-</div>
-
-<div class="log" id="log">
-  <div class="empty" id="empty">
-    Open in <b>Chrome</b>, click the orb, allow the mic, and speak.<br>
-    Runs on your own Anthropic key — set it with the ⚙ in the corner.
-  </div>
-</div>
-
-<!-- Settings / key gate -->
-<div class="scrim" id="scrim">
-  <div class="card">
-    <h2>CONNECT LI-DA'S BRAIN</h2>
-    <p>Li-Da runs on your own Anthropic API key. Create one (free account, pay-as-you-go) at
-       <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>,
-       then paste it below. It is saved only in this browser and is sent only to Anthropic.</p>
-    <label>Anthropic API key</label>
-    <input id="keyInput" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
-    <label>Model</label>
-    <select id="modelInput">
-      <option value="claude-haiku-4-5-20251001">Haiku — fast &amp; cheap (recommended)</option>
-      <option value="claude-sonnet-4-6">Sonnet — smarter, costs more</option>
-    </select>
-    <div class="row">
-      <button class="primary" id="saveKey">SAVE</button>
-      <button id="closeKey">CLOSE</button>
+    <!-- brand row -->
+    <div class="brand-row">
+      <span class="brand">LI<span class="diamond"><span class="d-r"></span><span class="d-l"></span></span>DA</span>
+      <a class="signin" href="/login.html">Sign in</a>
     </div>
-    <div class="note">Your key = your spend. Keep this file private, and set a monthly spend limit in the
-      Anthropic console so it can never surprise you. Chatting with Haiku typically costs a fraction of a cent per exchange.</div>
+
+    <!-- the hook -->
+    <div class="eyebrow">N°01 · A PLAIN-WORDS BRIEF</div>
+    <h1>Most losses aren't<br>bad luck. They're <span class="hype">hype.</span></h1>
+    <p class="lede">Li-Da reads a stock the slow way — the bull case and the bear case, side by side, in words you can actually weigh. No tips. No predictions. A clearer head.</p>
+
+    <!-- the proof: a STATIC example read (no live API call) -->
+    <div class="proof-row">
+      <span class="lbl">THIS IS A READ</span>
+      <span class="example-tag"><span class="dot"></span>EXAMPLE</span>
+    </div>
+    <div class="card">
+      <div class="co-row">
+        <div class="co-logo">AM</div>
+        <div class="co-id">
+          <div class="co-name">Amazon.com</div>
+          <div class="co-meta">AMZN · NASDAQ</div>
+        </div>
+        <div>
+          <div class="co-px">$213.40</div>
+          <div class="co-chg">+1.2%</div>
+        </div>
+      </div>
+      <div class="meter-poles"><span class="bull">BULL</span><span class="bear">BEAR</span></div>
+      <div class="meter"><div class="m-bull"></div><div class="m-bear"></div></div>
+      <div class="lean-line">Leans slightly cautious — the bear case edges it.</div>
+      <div class="divider"></div>
+      <div class="conf-row"><span class="k">CONFIDENCE</span><span class="v">Moderate</span></div>
+      <div class="point bull first"><span class="pdot"></span><span>Cloud margins expanding; ads compounding quietly.</span></div>
+      <div class="point bear"><span class="pdot"></span><span>Consumer spend softening; the valuation looks rich.</span></div>
+      <div class="own-it">A read is one input. You own the decision.</div>
+    </div>
+
+    <!-- the action: name->ticker search + Read, both reuse the existing Desk flow -->
+    <div class="action-lbl">TRY YOUR OWN TICKER —</div>
+    <div class="search">
+      <div class="search-row">
+        <div class="field">
+          <svg width="15" height="15" viewBox="0 0 15 15" aria-hidden="true"><circle cx="6" cy="6" r="4.5" fill="none" stroke="var(--muted)" stroke-width="1.4"/><line x1="9.5" y1="9.5" x2="13" y2="13" stroke="var(--muted)" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <input id="q" type="text" autocomplete="off" spellcheck="false" placeholder="Company or ticker, e.g. Tesla" aria-label="Company or ticker" />
+        </div>
+        <button id="readBtn" class="read-btn" type="button">Read</button>
+      </div>
+      <div class="results" id="dd"></div>
+    </div>
+
+    <!-- trust + footer -->
+    <div class="trust">No hype. No hot tips. Just clearer thinking.</div>
+    <div class="foot">Li-Da is information, not financial advice.</div>
+
   </div>
-</div>
 
-<script>
-const SYSTEM = `You are Li-Da, a warm and encouraging voice assistant — a genuinely supportive companion who's in the person's corner.
-Your replies are SPOKEN ALOUD, so keep them short and natural — usually 1 to 3 sentences, no lists, no markdown, no emojis.
-Be warm, patient, and quietly upbeat. Notice effort, celebrate small wins, and soften setbacks so the person feels capable rather than judged. Keep encouragement real and grounded — never gushing, never a cheerleader, never condescending.
-If a question needs a long answer, give the warm short version first and offer to go deeper.`;
+  <script>
+    // The search box and Read button REUSE the existing name->ticker search
+    // (/api/search) and hand off to the Desk (/research.html?symbol=...), which
+    // runs the real read. This page never calls /api/analyze itself.
+    (function () {
+      var input = document.getElementById("q");
+      var readBtn = document.getElementById("readBtn");
+      var dd = document.getElementById("dd");
+      var timer = null, seq = 0, items = [], idx = -1;
 
-let API_KEY = '', MODEL = 'claude-haiku-4-5-20251001';
-const history = [];
-let listening=false, handsfree=false, busy=false, recog=null, finalTranscript='', silenceTimer=null;
-
-const body=document.body, $=id=>document.getElementById(id);
-const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-
-// ---- guarded storage (works when downloaded; no-ops safely elsewhere) ----
-function store(k,v){try{localStorage.setItem(k,v)}catch(_){}}
-function recall(k){try{return localStorage.getItem(k)}catch(_){return null}}
-
-function loadKey(){
-  API_KEY = recall('nova_key') || '';
-  MODEL = recall('nova_model') || MODEL;
-  $('apiState').textContent = API_KEY ? 'API · READY' : 'API · NOT SET';
-  $('keyInput').value = API_KEY;
-  $('modelInput').value = MODEL;
-}
-function openSettings(){ $('scrim').classList.add('show'); $('keyInput').focus(); }
-function closeSettings(){ $('scrim').classList.remove('show'); }
-$('gear').onclick = openSettings;
-$('closeKey').onclick = closeSettings;
-$('saveKey').onclick = () => {
-  API_KEY = $('keyInput').value.trim();
-  MODEL = $('modelInput').value;
-  store('nova_key', API_KEY); store('nova_model', MODEL);
-  $('apiState').textContent = API_KEY ? 'API · READY' : 'API · NOT SET';
-  closeSettings();
-};
-
-function setState(s,label,hint){
-  body.dataset.state=s;
-  const c={idle:'--idle',listen:'--listen',think:'--think',speak:'--speak'}[s];
-  document.documentElement.style.setProperty('--glow',`var(${c})`);
-  $('status').textContent=label;
-  if(hint!==undefined) $('hint').textContent=hint;
-}
-setState('idle','Standby');
-loadKey();
-if(!API_KEY) openSettings();
-
-if(!SR){
-  addMsg('err','This browser does not support voice input. Please use Google Chrome.');
-  $('talkBtn').disabled=true; $('handsfree').disabled=true;
-}
-
-function addMsg(who,text){
-  $('empty')?.remove();
-  const d=document.createElement('div');
-  d.className='msg '+(who==='you'?'you':who==='err'?'err':'nova');
-  d.innerHTML=`<div class="who">${who==='you'?'YOU':'LI-DA'}</div>${text.replace(/</g,'&lt;')}`;
-  $('log').appendChild(d); d.scrollIntoView({behavior:'smooth',block:'end'});
-}
-
-function startListening(){
-  if(busy||listening||!SR) return;
-  if(!API_KEY){ openSettings(); return; }
-  recog=new SR(); recog.lang='en-US'; recog.interimResults=true; recog.continuous=true; recog.maxAlternatives=1;
-  finalTranscript='';
-  listening=true; setState('listen','Listening','Speak naturally — I reply when you pause (or click the orb to send)');
-  recog.onresult=e=>{
-    let interim='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      const t=e.results[i][0].transcript;
-      if(e.results[i].isFinal) finalTranscript+=t+' '; else interim+=t;
-    }
-    const shown=(finalTranscript+interim).trim();
-    if(shown) $('hint').textContent='\u201c'+shown+'\u201d';
-    clearTimeout(silenceTimer);
-    silenceTimer=setTimeout(()=>{ if(listening && finalTranscript.trim()) stopListening(); }, 1700);
-  };
-  recog.onerror=e=>{listening=false; clearTimeout(silenceTimer);
-    if(e.error==='not-allowed') addMsg('err','Microphone blocked. Click the lock/sliders icon in the address bar and allow the mic, then reload.');
-    else if(e.error!=='no-speech' && e.error!=='aborted') setState('idle','Standby','Click the orb and start talking');};
-  recog.onend=()=>{
-    listening=false; clearTimeout(silenceTimer);
-    const text=finalTranscript.trim();
-    if(text && !busy) handleSpeech(text);
-    else if(!busy) setState('idle','Standby','Click the orb and start talking');
-  };
-  try{recog.start()}catch(_){listening=false}
-}
-function stopListening(){ clearTimeout(silenceTimer); if(recog){ try{recog.stop()}catch(_){} } listening=false; }
-
-async function handleSpeech(userText){
-  busy=true; stopListening();
-  addMsg('you',userText); history.push({role:'user',content:userText});
-  setState('think','Thinking','');
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'content-type':'application/json',
-        'x-api-key':API_KEY,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      body:JSON.stringify({model:MODEL,max_tokens:400,system:SYSTEM,messages:history})
-    });
-    const data=await res.json();
-    if(!res.ok || data.error){
-      const m=(data.error&&data.error.message)||('HTTP '+res.status);
-      busy=false; setState('idle','Standby','Click the orb and start talking');
-      if(res.status===401) addMsg('err','Your API key was rejected. Open ⚙ and check it (it should start with sk-ant-).');
-      else if(res.status===400 && /model/i.test(m)) addMsg('err','That model name isn\u2019t available on your key. Open ⚙ and try the other model.');
-      else if(res.status===429 || /credit|balance|quota/i.test(m)) addMsg('err','Out of credits or rate-limited. Add a little balance in the Anthropic console.');
-      else addMsg('err','Could not reach the brain: '+m);
-      history.pop();
-      return;
-    }
-    const reply=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join(' ').trim()||'…';
-    history.push({role:'assistant',content:reply});
-    addMsg('nova',reply); speak(reply);
-  }catch(err){
-    busy=false; setState('idle','Standby','Click the orb and start talking'); history.pop();
-    addMsg('err','Network error reaching Anthropic. Check your connection (and that this isn\u2019t blocked by a work firewall).');
-  }
-}
-
-function speak(text){
-  setState('speak','Speaking','');
-  const u=new SpeechSynthesisUtterance(text); u.rate=1.04; u.pitch=1.0;
-  const vs=speechSynthesis.getVoices();
-  const pref=vs.find(v=>/Google US English|Samantha|Jenny|Aria|Zira/i.test(v.name));
-  if(pref) u.voice=pref;
-  u.onend=()=>{busy=false; if(handsfree) setTimeout(startListening,350); else setState('idle','Standby','Click the orb and start talking');};
-  u.onerror=()=>{busy=false; setState('idle','Standby','Click the orb and start talking');};
-  speechSynthesis.cancel(); speechSynthesis.speak(u);
-}
-
-$('orb').onclick=()=>listening?stopListening():startListening();
-$('talkBtn').onclick=()=>listening?stopListening():startListening();
-$('handsfree').onclick=e=>{
-  handsfree=!handsfree;
-  e.target.textContent='⟳ HANDS-FREE: '+(handsfree?'ON':'OFF');
-  e.target.classList.toggle('on',handsfree);
-  $('hint').textContent=handsfree?'Hands-free on — I\u2019ll keep listening after I reply':'Click the orb and start talking';
-  if(handsfree&&!busy&&!listening) startListening();
-};
-$('clearBtn').onclick=()=>{history.length=0;$('log').innerHTML='<div class="empty" id="empty">Cleared. Click the orb and say something.</div>';};
-speechSynthesis.onvoiceschanged=()=>{};
-</script>
-<script src="/nav.js" defer></script>
+      function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+          return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c];
+        });
+      }
+      function go(symbol) {
+        var s = (symbol || input.value || "").trim();
+        if (!s) { input.focus(); return; }
+        window.location.href = "/research.html?symbol=" + encodeURIComponent(s);
+      }
+      function hide() { dd.classList.remove("show"); dd.innerHTML = ""; items = []; idx = -1; }
+      function render() {
+        if (!items.length) { hide(); return; }
+        dd.innerHTML = items.map(function (r, i) {
+          var init = String(r.symbol || "?").slice(0, 2).toUpperCase();
+          return '<div class="res' + (i === idx ? " active" : "") + '" data-i="' + i + '">' +
+            '<div class="res-tile">' + esc(init) + '</div>' +
+            '<div class="res-main"><div class="res-name">' + esc(r.name) + '</div>' +
+            '<div class="res-sym">' + esc(r.symbol) + '</div></div></div>';
+        }).join("");
+        dd.classList.add("show");
+        [].forEach.call(dd.querySelectorAll(".res"), function (el) {
+          // mousedown (not click) so it fires before the input's blur hides the list
+          el.addEventListener("mousedown", function (ev) { ev.preventDefault(); go(items[parseInt(el.dataset.i, 10)].symbol); });
+        });
+      }
+      async function search(q) {
+        var s = ++seq;
+        try {
+          var res = await fetch("/api/search?q=" + encodeURIComponent(q));
+          var d = await res.json();
+          if (s !== seq) return; // ignore out-of-order responses
+          items = (d.results || []).slice(0, 6); idx = -1; render();
+        } catch (e) { /* leave the list as-is on a hiccup */ }
+      }
+      input.addEventListener("input", function () {
+        var q = input.value.trim();
+        clearTimeout(timer);
+        if (q.length < 2) { hide(); return; }
+        timer = setTimeout(function () { search(q); }, 200);
+      });
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); if (idx >= 0 && items[idx]) go(items[idx].symbol); else go(); }
+        else if (e.key === "ArrowDown") { e.preventDefault(); if (items.length) { idx = (idx + 1) % items.length; render(); } }
+        else if (e.key === "ArrowUp") { e.preventDefault(); if (items.length) { idx = (idx - 1 + items.length) % items.length; render(); } }
+        else if (e.key === "Escape") { hide(); }
+      });
+      input.addEventListener("blur", function () { setTimeout(hide, 160); });
+      readBtn.addEventListener("click", function () { go(); });
+    })();
+  </script>
+</body>
+</html>

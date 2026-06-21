@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="/lida.css" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/auth.js"></script>
+<script src="/glossary.js" defer></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -234,15 +235,15 @@
       <div class="e-levels">
         <div><span>Logged at</span><span>${money(e.price_at_log)}</span></div>
         ${e.entry != null ? `<div><span>Entry</span><span>${money(e.entry)}</span></div>` : ""}
-        ${e.stop_loss != null ? `<div><span>Stop</span><span>${money(e.stop_loss)}</span></div>` : ""}
-        ${e.take_profit != null ? `<div><span>Target</span><span>${money(e.take_profit)}</span></div>` : ""}
-        ${r ? `<div><span>Risk:Reward</span><span>${r}</span></div>` : ""}
+        ${e.stop_loss != null ? `<div><span>${glossTerm("Stop", "stop")}</span><span>${money(e.stop_loss)}</span></div>` : ""}
+        ${e.take_profit != null ? `<div><span>${glossTerm("Target", "target")}</span><span>${money(e.take_profit)}</span></div>` : ""}
+        ${r ? `<div><span>${glossTerm("Risk:Reward", "riskReward")}</span><span>${r}</span></div>` : ""}
       </div>`;
 
     const resultHtml = `<div class="e-result-row">${resultLine(g)}</div>`;
 
     const ai = e.ai_lean
-      ? `<div class="e-ai">Li-Da leaned <b>${esc(e.ai_lean)}</b>${e.ai_confidence ? " (" + esc(e.ai_confidence) + ")" : ""} · you chose <b>${esc(dec)}</b> ${alignTag(e)}</div>`
+      ? `<div class="e-ai">Li-Da ${glossTerm("leaned", "lean")} <b>${esc(e.ai_lean)}</b>${e.ai_confidence ? " (" + glossTerm(e.ai_confidence, "confidence") + ")" : ""} · you chose <b>${esc(dec)}</b> ${alignTag(e)}</div>`
       : "";
 
     const reason = e.reasoning ? `<div class="e-reason">“${esc(e.reasoning)}”</div>` : "";

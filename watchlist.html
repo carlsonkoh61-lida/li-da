@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="/lida.css" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/auth.js"></script>
+<script src="/glossary.js" defer></script>
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; }
@@ -148,11 +149,14 @@
     function rowHtml(symbol) {
       var lean = leanMap[symbol];
       var lc = leanClass(lean), ll = leanLabel(lean);
+      // Gloss the lean only when there IS one ("Buy"/"Sell"/"Hold"); the "tap to read"
+      // placeholder is a call to action, not a term, so it stays plain.
+      var leanCell = lean ? glossTerm(ll, "lean") : esc(ll);
       return '' +
         '<a class="row" href="/research.html?symbol=' + encodeURIComponent(symbol) + '" data-sym="' + esc(symbol) + '">' +
           '<div class="tk"><div class="sym">' + esc(symbol) + '</div><div class="nm" data-nm></div></div>' +
           '<div class="pr"><div class="px loading" data-px>—</div><div class="ch flat" data-ch></div></div>' +
-          '<div class="lean ' + lc + '">' + esc(ll) + '</div>' +
+          '<div class="lean ' + lc + '">' + leanCell + '</div>' +
           '<button class="rm" title="Remove" data-rm="' + esc(symbol) + '">×</button>' +
         '</a>';
     }

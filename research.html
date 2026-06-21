@@ -116,6 +116,11 @@
   /* ---- the read ---- */
   .read.thinking { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 14px; }
   .cached-note { margin: 10px 0 0; font-size: 11px; color: var(--muted); font-family: "IBM Plex Mono", monospace; letter-spacing: 0.03em; }
+  /* hourly read-limit notice — calm amber, never a red error */
+  .limit-note { display: flex; gap: 12px; align-items: flex-start; padding: 16px 18px; border: 1px solid var(--warn); border-radius: 14px; background: rgba(203,176,129,0.08); }
+  .limit-note .ico { color: var(--warn); font-size: 18px; line-height: 1.3; flex: none; }
+  .limit-note .ln-title { margin: 0 0 4px; color: var(--ink); font-weight: 600; font-size: 15px; }
+  .limit-note .ln-sub { margin: 0; color: var(--ink-dim); font-size: 13px; line-height: 1.5; }
   /* signature: the read signal — confidence ring + bull/bear meter */
   .signal2 { display: flex; align-items: center; gap: 20px; padding: 16px 18px; border-radius: 14px; background: rgba(143,176,214,0.05); border: 1px solid var(--line); margin-bottom: 16px; flex-wrap: wrap; }
   .ring { display: flex; flex-direction: column; align-items: center; gap: 7px; flex: none; }
@@ -1103,7 +1108,17 @@
       const d = await res.json();
       if (!res.ok) {
         box.className = "read";
-        box.innerHTML = `<p class="error" style="margin:0">${esc(d.error || "Couldn't run the read.")}</p>`;
+        if (res.status === 429) {
+          // Hourly read limit reached — show a calm amber notice, not a red error.
+          const lim = typeof d.limit === "number" ? d.limit : null;
+          box.innerHTML =
+            `<div class="limit-note"><span class="ico">⏳</span><div>` +
+            `<p class="ln-title">${esc(d.error || "You've reached your hourly read limit.")}</p>` +
+            `<p class="ln-sub">${lim ? "Your plan allows " + lim + " reads an hour. " : ""}It resets at the top of the hour.</p>` +
+            `</div></div>`;
+        } else {
+          box.innerHTML = `<p class="error" style="margin:0">${esc(d.error || "Couldn't run the read.")}</p>`;
+        }
         return;
       }
       if (ctx) ctx.read = d.read;

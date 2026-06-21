@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="/lida.css" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/auth.js"></script>
+<script src="/glossary.js" defer></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -556,17 +557,19 @@
   function renderEvidence(d) {
     const f = d.figures || {};
     const rows = [];
-    const cap = fmtCap(f.marketCap); if (cap) rows.push(["Market cap", cap]);
-    if (num(f.pe) != null) rows.push(["P/E (TTM)", num(f.pe)]);
-    if (f.low52 != null && f.high52 != null) rows.push(["52-week range", money(f.low52) + " – " + money(f.high52)]);
-    if (pct(f.profitMargin) != null) rows.push(["Profit margin", pct(f.profitMargin)]);
-    if (pct(f.revGrowth) != null) rows.push(["Revenue growth", pct(f.revGrowth)]);
-    if (num(f.debtToEquity) != null) rows.push(["Debt / equity", num(f.debtToEquity)]);
-    if (num(f.currentRatio) != null) rows.push(["Current ratio", num(f.currentRatio)]);
-    if (num(f.eps) != null) rows.push(["EPS (TTM)", "$" + num(f.eps)]);
+    const cap = fmtCap(f.marketCap); if (cap) rows.push(["Market cap", cap, "marketCap"]);
+    if (num(f.pe) != null) rows.push(["P/E (TTM)", num(f.pe), "pe"]);
+    if (f.low52 != null && f.high52 != null) rows.push(["52-week range", money(f.low52) + " – " + money(f.high52), "range52"]);
+    if (pct(f.profitMargin) != null) rows.push(["Profit margin", pct(f.profitMargin), "profitMargin"]);
+    if (pct(f.revGrowth) != null) rows.push(["Revenue growth", pct(f.revGrowth), "revGrowth"]);
+    if (num(f.debtToEquity) != null) rows.push(["Debt / equity", num(f.debtToEquity), "debtToEquity"]);
+    if (num(f.currentRatio) != null) rows.push(["Current ratio", num(f.currentRatio), "currentRatio"]);
+    if (num(f.eps) != null) rows.push(["EPS (TTM)", "$" + num(f.eps), "eps"]);
 
+    // glossTerm (glossary.js) wraps the label in a tappable, plain-English explainer;
+    // it falls back to plain text if the key is unknown, so it can never break a row.
     const figsHtml = rows.length
-      ? `<div class="figs">${rows.map((r) => `<div class="fig"><span>${esc(r[0])}</span><span>${esc(r[1])}</span></div>`).join("")}</div>`
+      ? `<div class="figs">${rows.map((r) => `<div class="fig"><span>${glossTerm(r[0], r[2])}</span><span>${esc(r[1])}</span></div>`).join("")}</div>`
       : `<p class="empty">No fundamentals available for this ticker.</p>`;
 
     // versus peers
@@ -639,16 +642,16 @@
     let techHtml = "";
     if (t) {
       const ma50dir = t.priceVsMA50 != null ? (t.priceVsMA50 >= 0 ? "up" : "down") : "";
-      const ma50txt = t.priceVsMA50 != null ? `<span class="tstat">vs MA50 <b class="${ma50dir}">${t.priceVsMA50 >= 0 ? "+" : ""}${t.priceVsMA50}%</b></span>` : "";
-      const rsiTxt = t.rsi != null ? `<span class="tstat">RSI <b>${t.rsi}</b> · ${esc(t.rsiState)}</span>` : "";
-      const offHi = t.pctOffHigh != null ? `<span class="tstat">off high <b>${t.pctOffHigh}%</b></span>` : "";
+      const ma50txt = t.priceVsMA50 != null ? `<span class="tstat">vs ${glossTerm("MA50", "ma50")} <b class="${ma50dir}">${t.priceVsMA50 >= 0 ? "+" : ""}${t.priceVsMA50}%</b></span>` : "";
+      const rsiTxt = t.rsi != null ? `<span class="tstat">${glossTerm("RSI", "rsi")} <b>${t.rsi}</b> · ${esc(t.rsiState)}</span>` : "";
+      const offHi = t.pctOffHigh != null ? `<span class="tstat">${glossTerm("off high", "offHigh")} <b>${t.pctOffHigh}%</b></span>` : "";
       const hy = d.hype || null;
-      const hotChip = (hy && hy.hot) ? `<span class="tchip hot">running hot</span>` : "";
+      const hotChip = (hy && hy.hot) ? `<span class="tchip hot">${glossTerm("running hot", "hot")}</span>` : "";
       techHtml = `
         <div class="block">
           <div class="lab">Technicals</div>
           <div class="tech-row">
-            <span class="tchip ${esc(t.trend)}">${esc(t.trend)}</span>${hotChip}
+            <span class="tchip ${esc(t.trend)}">${glossTerm(t.trend, "trend")}</span>${hotChip}
             ${rsiTxt}${ma50txt}${offHi}
           </div>
         </div>`;
@@ -663,9 +666,9 @@
         <div class="block">
           <div class="lab">Market regime</div>
           <div class="tech-row">
-            <span class="tchip regime">${esc(rg.label)}</span>
-            <span class="tstat">volatility <b>${esc(rg.volatility_state)}</b>${volMove}</span>
-            <span class="tstat">volume <b>${esc(rg.volume_state)}</b></span>
+            <span class="tchip regime">${glossTerm(rg.label, "regime")}</span>
+            <span class="tstat">${glossTerm("volatility", "volatility")} <b>${esc(rg.volatility_state)}</b>${volMove}</span>
+            <span class="tstat">${glossTerm("volume", "volume")} <b>${esc(rg.volume_state)}</b></span>
           </div>
         </div>`;
     }

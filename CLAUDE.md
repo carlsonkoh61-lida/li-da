@@ -223,3 +223,30 @@ Three layers (top → bottom):
 It is ONE coherent character, not two: **warm to *you*, sharp about the *market*.** The warmth and the edge never conflict because they're aimed at different targets — kind to the person, ruthless about a stock that doesn't deserve their money.
 
 **Personalization rule (ties to Phase 2):** later, the history-aware layer may modulate the *tone* — gentler/more reassuring with a nervous beginner, more direct/terse with an experienced user. But it adapts **how gently it speaks, never what it stands for.** The bedside manner flexes; the soul (warm-to-you, sharp-about-market, honest-above-all) never drifts. Adapting tone builds intimacy; adapting values would break trust.
+
+---
+
+## Visual direction (LOCKED — "approachable premium")
+
+**North star:** a calm, premium room a beginner feels **guided** in — not a trading terminal they feel **tested** by. The look does what the voice does: *serious about the market, warm to the person.*
+
+**Anti-hype ≠ austere.** The UI should feel **immersive, polished, and legit** — it's a real tech product, and looking credible *is* substance for an anti-hype brand. Restraint means refusing the manipulation tricks (NO neon, glow, flashing, fake urgency, confetti) — NOT visual timidity. Atmosphere, depth, and craft build trust and are fully on-brand. Cheap-looking honesty undersells itself.
+
+**Premium & serious** (aimed at the *market* — signals trustworthy):
+- Dark atmospheric base — slate, not pure black. Real data, clean numerals, restrained palette.
+- No neon/glow/flashing — the restraint *is* the anti-hype look.
+- Cohesion, depth, atmosphere, craft = "immersively legit."
+
+**Warm & approachable** (aimed at the *person* — beginner feels invited):
+- **Space over density — the #1 lever.** What intimidates beginners is density, not dark colors. Show fewer things at once; lead with the plain-language read; push dense figures lower or behind a tap.
+- Plain human sentences in Inter; reserve IBM Plex Mono for *actual numbers* only.
+- Brass/gold accent as the human warmth — not everything cold steel-blue.
+- Soft shapes, calm motion, rounded corners, gentle borders — alive, never flashy.
+- Microcopy in the voice: empty states, hints, and errors sound like a friend, not a system.
+
+**Themes (dark primary, light fast-follow):**
+- **Dark mode is the hero** — the approved premium-atmospheric direction; finance/data tools default dark.
+- **Light mode is supported**, built on the SAME semantic tokens (`lida.css` already uses `--bg`/`--surface`/`--ink`/etc.), so it's a palette swap, not a rebuild.
+- **Sequencing:** architect tokens cleanly NOW so both themes are cheap → ship **dark first** → **light mode is a fast-follow**, not a pre-launch blocker (building/testing two full themes before validation is polish-before-users). If the clean token system makes light nearly free, ship both.
+
+**Not a teardown:** the existing palette already leans this way (slate not black, brass warm note, Inter friendly sans). The work is mostly: add space, lead with words, warm the accents, cut anything that glows, keep tokens clean for theming.

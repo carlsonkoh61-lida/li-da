@@ -360,8 +360,8 @@ async function writeCache(symbol, payload) {
 // in Supabase (analyze_usage); we use the SERVICE key, like the cache.
 // FAIL OPEN: if the check itself errors, we ALLOW the read — a real person must
 // never be locked out by a DB hiccup.
-const TIER_CAPS = { free: 25, paid: 200 }; // reads per hour
-const FREE_CAP = 25;
+const TIER_CAPS = { free: 3, paid: 200 }; // reads per hour — TEMP: free lowered 25→3 for rate-limit testing, revert to 25
+const FREE_CAP = 3; // TEMP: revert to 25 after testing
 
 // Start of the current clock hour in UTC — equivalent to date_trunc('hour', now())
 // under Supabase's default UTC session. This is the window key.

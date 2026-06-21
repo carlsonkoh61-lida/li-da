@@ -1110,10 +1110,13 @@
       box.outerHTML = renderRead(d.read);
       // Honest note when this read came from the shared 15-min cache. The hero
       // price above is still live (separate /api/market call) — only the read is cached.
+      // It must live INSIDE the .read block: on desktop #out is a grid with named
+      // areas, so a stray child of #out has no grid-area and won't render.
       if (d.cached) {
         const sec = d.cachedAgeSec || 0;
         const age = sec < 60 ? "under 1m old" : Math.round(sec / 60) + "m old";
-        out.insertAdjacentHTML("beforeend", `<p class="cached-note">cached read · ${age} · refreshes every 15 min (live price above stays current)</p>`);
+        const readEl = out.querySelector(".read");
+        if (readEl) readEl.insertAdjacentHTML("beforeend", `<p class="cached-note">cached read · ${age} · refreshes every 15 min (live price above stays current)</p>`);
       }
       out.insertAdjacentHTML("beforeend", renderEvidence(d));
       out.insertAdjacentHTML("beforeend", renderMove());

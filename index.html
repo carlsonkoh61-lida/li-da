@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/lida.css" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
 <style>
   /* Landing page — Li-Da's front door. Colors come ONLY from lida.css tokens. */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -92,6 +94,22 @@
   .res-name { font-size: 13.5px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .res-sym { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
 
+  /* anonymous free read: inline result, sign-up nudge, and the wall */
+  .anon-result { margin-top: 18px; }
+  .anon-loading { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); padding: 4px 2px; }
+  .anon-error { font-size: 13px; color: var(--down); padding: 4px 2px; }
+  .read-summary { font-size: 12.5px; color: var(--ink-dim); line-height: 1.55; margin: 11px 0 0; }
+  .nudge { margin-top: 12px; padding: 14px 16px; background: rgba(203,176,129,0.07); border: 1px solid var(--warn); border-radius: 14px; }
+  .nudge p { font-size: 13px; color: var(--ink-dim); line-height: 1.5; }
+  .nudge .row, .wall .row { display: flex; gap: 9px; margin-top: 12px; }
+  .wall { margin-top: 12px; padding: 18px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 16px; }
+  .wall h3 { font-family: var(--font-display); font-size: 16px; font-weight: 600; color: var(--ink); }
+  .wall p { font-size: 13px; color: var(--ink-dim); line-height: 1.55; margin-top: 7px; }
+  .btn-primary { flex: 1; text-align: center; text-decoration: none; background: var(--accent); color: var(--bg); font-weight: 600; font-size: 13.5px; border-radius: 11px; padding: 11px 0; font-family: var(--font-body); }
+  .btn-primary:hover { background: var(--accent-dim); }
+  .btn-ghost { flex: 1; text-align: center; text-decoration: none; background: transparent; color: var(--ink); font-weight: 500; font-size: 13.5px; border: 1px solid var(--line-strong); border-radius: 11px; padding: 11px 0; font-family: var(--font-body); }
+  .btn-ghost:hover { border-color: var(--accent); }
+
   /* trust + footer */
   .trust { margin: 26px 0 0; padding: 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; text-align: center; font-size: 13px; color: var(--gold); }
   .foot { text-align: center; font-size: 11px; color: var(--muted); padding: 18px 0 6px; }
@@ -156,6 +174,9 @@
       <div class="results" id="dd"></div>
     </div>
 
+    <!-- anonymous free read renders inline here (read + nudge, or the wall) -->
+    <div class="anon-result" id="anonResult"></div>
+
     <!-- trust + footer -->
     <div class="trust">No hype. No hot tips. Just clearer thinking.</div>
     <div class="foot">Li-Da is information, not financial advice.</div>
@@ -163,25 +184,146 @@
   </div>
 
   <script>
-    // The search box and Read button REUSE the existing name->ticker search
-    // (/api/search) and hand off to the Desk (/research.html?symbol=...), which
-    // runs the real read. This page never calls /api/analyze itself.
+    // Home search REUSES the existing name->ticker search (/api/search). Then:
+    //  - Signed in  -> hand off to the Desk (/research.html?symbol=...), as before.
+    //  - Anonymous  -> ONE free taste read, rendered INLINE here (never the Desk).
+    //                  The cookie shows the wall smoothly after that; the real
+    //                  abuse guard is the per-IP cap inside /api/analyze.
     (function () {
+      // Tunable: how many free reads an anonymous browser gets before the wall.
+      var ANON_FREE_READS = 1;
+
       var input = document.getElementById("q");
       var readBtn = document.getElementById("readBtn");
       var dd = document.getElementById("dd");
-      var timer = null, seq = 0, items = [], idx = -1;
+      var out = document.getElementById("anonResult");
+      var timer = null, seq = 0, items = [], idx = -1, busy = false;
 
       function esc(s) {
         return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
           return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c];
         });
       }
-      function go(symbol) {
-        var s = (symbol || input.value || "").trim();
-        if (!s) { input.focus(); return; }
-        window.location.href = "/research.html?symbol=" + encodeURIComponent(s);
+
+      // ---- cookie: 1 free read per browser (UX layer only) ----
+      function anonReadsUsed() {
+        var m = document.cookie.match(/(?:^|;\s*)lida_anon_reads=(\d+)/);
+        return m ? parseInt(m[1], 10) : 0;
       }
+      function bumpAnonReads() {
+        var n = anonReadsUsed() + 1;
+        document.cookie = "lida_anon_reads=" + n + "; path=/; max-age=" + (365 * 24 * 3600) + "; SameSite=Lax";
+      }
+
+      // ---- the action ----
+      async function go(symbol) {
+        var s = (symbol || input.value || "").trim();
+        if (!s || busy) { if (!s) input.focus(); return; }
+        hide();
+        var session = window.lidaAuth ? await window.lidaAuth.getSession() : null;
+        if (session) { window.location.href = "/research.html?symbol=" + encodeURIComponent(s); return; }
+        // anonymous from here on
+        if (anonReadsUsed() >= ANON_FREE_READS) { showWall(); return; }
+        runAnonRead(s);
+      }
+
+      async function resolveSymbol(q) {
+        try {
+          var res = await fetch("/api/search?q=" + encodeURIComponent(q));
+          var d = await res.json();
+          var first = (d.results || [])[0];
+          return first ? first.symbol : q.toUpperCase();
+        } catch (e) { return q.toUpperCase(); }
+      }
+
+      async function runAnonRead(query) {
+        busy = true; readBtn.disabled = true;
+        out.innerHTML = '<div class="anon-loading">Reading… (a few seconds)</div>';
+        out.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        try {
+          var symbol = await resolveSymbol(query);
+          // /api/market (name + live price) and /api/analyze (the read, anonymous —
+          // no Authorization header) in parallel. analyze enforces the per-IP cap.
+          var mRes, aRes;
+          try {
+            var both = await Promise.all([
+              fetch("/api/market?symbol=" + encodeURIComponent(symbol)),
+              fetch("/api/analyze?symbol=" + encodeURIComponent(symbol)),
+            ]);
+            mRes = both[0]; aRes = both[1];
+          } catch (e) { showError("Couldn't reach the read service. Try again in a moment."); return; }
+
+          var ana = await aRes.json().catch(function () { return {}; });
+          if (ana && ana.gated) { showWall(ana.message); return; }
+          if (!aRes.ok || !ana || !ana.read) { showError((ana && ana.error) || "Couldn't run that read. Try another ticker."); return; }
+          var mkt = await mRes.json().catch(function () { return null; });
+
+          renderRead(symbol, mkt, ana.read);
+          bumpAnonReads(); // this browser has now used its free read
+        } finally {
+          busy = false; readBtn.disabled = false;
+        }
+      }
+
+      function money(n) { return (typeof n === "number") ? "$" + n.toFixed(2) : "—"; }
+      function cap1(s) { s = String(s || ""); return s.charAt(0).toUpperCase() + s.slice(1); }
+
+      function renderRead(symbol, mkt, read) {
+        var name = (mkt && mkt.name) || symbol;
+        var meta = (mkt && mkt.industry) ? (symbol + " · " + mkt.industry) : symbol;
+        var init = String(symbol || "?").slice(0, 2).toUpperCase();
+        var up = !(mkt && typeof mkt.percent === "number" && mkt.percent < 0);
+        var pxHtml = (mkt && typeof mkt.price === "number")
+          ? '<div><div class="co-px">' + money(mkt.price) + '</div><div class="co-chg" style="color:' + (up ? "var(--up)" : "var(--down)") + '">' +
+            (typeof mkt.percent === "number" ? (mkt.percent >= 0 ? "+" : "") + mkt.percent.toFixed(2) + "%" : "") + '</div></div>'
+          : "";
+
+        // Bull/bear split from the lean + confidence (both sides always shown).
+        var leanDir = read.lean === "buy" ? 1 : read.lean === "sell" ? -1 : 0;
+        var confMag = ({ low: 0.4, medium: 0.7, high: 1 })[String(read.confidence || "low").toLowerCase()] || 0.4;
+        var bullPct = Math.round(Math.max(25, Math.min(75, 50 + leanDir * confMag * 25)));
+
+        var bull = (read.bull || []).map(function (p) {
+          return '<div class="point bull"><span class="pdot"></span><span>' + esc(p) + "</span></div>";
+        }).join("");
+        var bear = (read.bear || []).map(function (p) {
+          return '<div class="point bear"><span class="pdot"></span><span>' + esc(p) + "</span></div>";
+        }).join("");
+
+        out.innerHTML =
+          '<div class="card">' +
+            '<div class="co-row">' +
+              '<div class="co-logo">' + esc(init) + '</div>' +
+              '<div class="co-id"><div class="co-name">' + esc(name) + '</div><div class="co-meta">' + esc(meta) + '</div></div>' +
+              pxHtml +
+            '</div>' +
+            '<div class="meter-poles"><span class="bull">BULL</span><span class="bear">BEAR</span></div>' +
+            '<div class="meter"><div class="m-bull" style="width:' + bullPct + '%"></div><div class="m-bear" style="width:' + (100 - bullPct) + '%"></div></div>' +
+            (read.summary ? '<div class="read-summary">' + esc(read.summary) + "</div>" : "") +
+            '<div class="divider"></div>' +
+            '<div class="conf-row"><span class="k">CONFIDENCE</span><span class="v">' + esc(cap1(read.confidence || "low")) + "</span></div>" +
+            '<div style="margin-top:13px">' + bull + bear + "</div>" +
+            '<div class="own-it">A read is one input. You own the decision.</div>' +
+          "</div>" +
+          '<div class="nudge">' +
+            "<p>Sign in to save this read — and read any stock. Free, no card needed.</p>" +
+            '<div class="row"><a class="btn-primary" href="/login.html">Sign up</a><a class="btn-ghost" href="/login.html">Sign in</a></div>' +
+          "</div>";
+        out.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      function showWall(message) {
+        out.innerHTML =
+          '<div class="wall">' +
+            "<h3>That's your free read.</h3>" +
+            "<p>" + esc(message || "Create a free account to read any stock, save your reads, and track your decisions. Still free — no card needed.") + "</p>" +
+            '<div class="row"><a class="btn-primary" href="/login.html">Sign up</a><a class="btn-ghost" href="/login.html">Sign in</a></div>' +
+          "</div>";
+        out.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+      function showError(msg) { out.innerHTML = '<div class="anon-error">' + esc(msg) + "</div>"; }
+
+      // ---- name->ticker autocomplete (reuses /api/search) ----
       function hide() { dd.classList.remove("show"); dd.innerHTML = ""; items = []; idx = -1; }
       function render() {
         if (!items.length) { hide(); return; }

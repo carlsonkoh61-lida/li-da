@@ -250,3 +250,17 @@ It is ONE coherent character, not two: **warm to *you*, sharp about the *market*
 - **Sequencing:** architect tokens cleanly NOW so both themes are cheap → ship **dark first** → **light mode is a fast-follow**, not a pre-launch blocker (building/testing two full themes before validation is polish-before-users). If the clean token system makes light nearly free, ship both.
 
 **Not a teardown:** the existing palette already leans this way (slate not black, brass warm note, Inter friendly sans). The work is mostly: add space, lead with words, warm the accents, cut anything that glows, keep tokens clean for theming.
+
+---
+
+## Mission & Vision (PUBLIC — Li-Da's voice, for users & brand)
+
+> This is the outward-facing brand language, in the locked voice. Distinct from the internal/dev mission in "What Li-Da is" at the top (that one is for builders). Use this on the home screen, an about page, and anywhere Li-Da describes itself to people. Anti-hype test applies: no promises of wealth, no "financial freedom," no AI showboating.
+
+**Mission (what we do today):**
+> Good investment research was always hard to reach — pricey, jargon-heavy, built for insiders. Li-Da uses AI to open it up: an honest read, the bull case *and* the bear case in plain words, before you act. We use it to put clear thinking in your hands and catch a hype-driven mistake before it costs you.
+
+**Vision (where we're headed):**
+> A Southeast Asia where anyone — wherever they live, however they started — can weigh both sides and decide with clarity, not hype. We won't make you rich or trade for you. We'll help you think honestly about your decisions, and get better at making them yourself.
+
+**The spirit underneath (for anyone writing copy):** AI is the *engine, not the pitch* — the thing that makes deep, honest analysis cheap enough to reach everyone, city or small town, first-timer or veteran. A bridge to clearer thinking, never a buzzword. Ambitious about *judgment and access*; humble about *outcomes*. Said quietly — an anti-hype brand doesn't need a slogan.

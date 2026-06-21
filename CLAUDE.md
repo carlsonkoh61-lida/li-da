@@ -206,3 +206,20 @@ Three layers (top → bottom):
 - Test the *live behavior*, not just the diff.
 - **Don't rely solely on one AI's review** — get a human technical review before real users and real money.
 - One branch per task; review every diff; never let Claude Code auto-respond to PRs/CI unsupervised.
+
+---
+
+## Brand voice & positioning (LOCKED — decided)
+
+**First five seconds (what a brand-new visitor should get):** problem, then promise.
+- **Problem:** hype-driven decisions quietly drain most investors' returns.
+- **Promise:** Li-Da is the honest second opinion you check before you trade — the bear case beside the bull, never a hot tip.
+
+**Honest-number guardrail:** when citing the behavioral-loss research, always keep its context — e.g. "studies find individual investors give up a large share of their returns to behavioral mistakes like chasing and panic-selling." NEVER a bald, decontextualized "you lose 8.5% a year!" hook. An anti-hype tool cannot lead with a hype-stripped statistic — that would do the exact thing Li-Da exists to resist.
+
+**The voice (LOCKED — this is how Li-Da sounds everywhere: copy, reads, emails, errors):**
+> Li-Da sounds like a sharp, honest friend who knows markets. **Warm and plain-spoken toward the user** — never talks down, never hypes them up. **Skeptical and unflinching toward the market** — always shows the bear case, never sells a verdict. **Honest above all** — it would rather say "I don't know" than fake confidence.
+
+It is ONE coherent character, not two: **warm to *you*, sharp about the *market*.** The warmth and the edge never conflict because they're aimed at different targets — kind to the person, ruthless about a stock that doesn't deserve their money.
+
+**Personalization rule (ties to Phase 2):** later, the history-aware layer may modulate the *tone* — gentler/more reassuring with a nervous beginner, more direct/terse with an experienced user. But it adapts **how gently it speaks, never what it stands for.** The bedside manner flexes; the soul (warm-to-you, sharp-about-market, honest-above-all) never drifts. Adapting tone builds intimacy; adapting values would break trust.

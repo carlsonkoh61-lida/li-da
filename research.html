@@ -557,11 +557,14 @@
   function renderEvidence(d) {
     const f = d.figures || {};
     const rows = [];
-    const cap = fmtCap(f.marketCap); if (cap) rows.push(["Market cap", cap, "marketCap"]);
+    // Only genuinely-jargon labels get a glossary key (and thus the underline);
+    // plain ones a beginner already gets (Market cap, 52-week range, Revenue growth)
+    // pass null so they render as plain text — fewer, meaningful cues read clearer.
+    const cap = fmtCap(f.marketCap); if (cap) rows.push(["Market cap", cap, null]);
     if (num(f.pe) != null) rows.push(["P/E (TTM)", num(f.pe), "pe"]);
-    if (f.low52 != null && f.high52 != null) rows.push(["52-week range", money(f.low52) + " – " + money(f.high52), "range52"]);
+    if (f.low52 != null && f.high52 != null) rows.push(["52-week range", money(f.low52) + " – " + money(f.high52), null]);
     if (pct(f.profitMargin) != null) rows.push(["Profit margin", pct(f.profitMargin), "profitMargin"]);
-    if (pct(f.revGrowth) != null) rows.push(["Revenue growth", pct(f.revGrowth), "revGrowth"]);
+    if (pct(f.revGrowth) != null) rows.push(["Revenue growth", pct(f.revGrowth), null]);
     if (num(f.debtToEquity) != null) rows.push(["Debt / equity", num(f.debtToEquity), "debtToEquity"]);
     if (num(f.currentRatio) != null) rows.push(["Current ratio", num(f.currentRatio), "currentRatio"]);
     if (num(f.eps) != null) rows.push(["EPS (TTM)", "$" + num(f.eps), "eps"]);
@@ -597,7 +600,8 @@
             <span class="m">${p.margin != null ? pct(p.margin) : "—"}</span>
           </div>`;
       }).join("");
-      const tag = pt ? `<span class="ptag">${esc(pt.relative || "vs peers")}</span>` : "";
+      const rel = pt ? (pt.relative || "vs peers") : "";
+      const tag = pt ? `<span class="ptag">${glossTerm(rel, rel)}</span>` : ""; // "premium"/"discount" gloss; others stay plain
       const detail = pt ? `<p>${esc(pt.detail || "")}</p>` : "";
       peersHtml = `
         <div class="block">
@@ -643,7 +647,9 @@
     if (t) {
       const ma50dir = t.priceVsMA50 != null ? (t.priceVsMA50 >= 0 ? "up" : "down") : "";
       const ma50txt = t.priceVsMA50 != null ? `<span class="tstat">vs ${glossTerm("MA50", "ma50")} <b class="${ma50dir}">${t.priceVsMA50 >= 0 ? "+" : ""}${t.priceVsMA50}%</b></span>` : "";
-      const rsiTxt = t.rsi != null ? `<span class="tstat">${glossTerm("RSI", "rsi")} <b>${t.rsi}</b> · ${esc(t.rsiState)}</span>` : "";
+      // "overbought"/"oversold" are jargon worth explaining; "neutral" stays plain.
+      const rsiState = (t.rsiState === "overbought" || t.rsiState === "oversold") ? glossTerm(t.rsiState, t.rsiState) : esc(t.rsiState);
+      const rsiTxt = t.rsi != null ? `<span class="tstat">${glossTerm("RSI", "rsi")} <b>${t.rsi}</b> · ${rsiState}</span>` : "";
       const offHi = t.pctOffHigh != null ? `<span class="tstat">${glossTerm("off high", "offHigh")} <b>${t.pctOffHigh}%</b></span>` : "";
       const hy = d.hype || null;
       const hotChip = (hy && hy.hot) ? `<span class="tchip hot">${glossTerm("running hot", "hot")}</span>` : "";
@@ -651,7 +657,7 @@
         <div class="block">
           <div class="lab">Technicals</div>
           <div class="tech-row">
-            <span class="tchip ${esc(t.trend)}">${glossTerm(t.trend, "trend")}</span>${hotChip}
+            <span class="tchip ${esc(t.trend)}">${esc(t.trend)}</span>${hotChip}
             ${rsiTxt}${ma50txt}${offHi}
           </div>
         </div>`;
@@ -667,8 +673,8 @@
           <div class="lab">Market regime</div>
           <div class="tech-row">
             <span class="tchip regime">${glossTerm(rg.label, "regime")}</span>
-            <span class="tstat">${glossTerm("volatility", "volatility")} <b>${esc(rg.volatility_state)}</b>${volMove}</span>
-            <span class="tstat">${glossTerm("volume", "volume")} <b>${esc(rg.volume_state)}</b></span>
+            <span class="tstat">volatility <b>${esc(rg.volatility_state)}</b>${volMove}</span>
+            <span class="tstat">volume <b>${esc(rg.volume_state)}</b></span>
           </div>
         </div>`;
     }

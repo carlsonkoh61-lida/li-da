@@ -29,7 +29,11 @@
     volatility:   "How much the price has been jumping around recently. Higher means bigger daily moves.",
     volume:       "How many shares are changing hands — whether trading activity is rising, steady, or fading.",
     hot:          "The price has run up fast and far above its recent average, so it may be stretched.",
-    offHigh:      "How far below its recent peak the price is sitting right now."
+    offHigh:      "How far below its recent peak the price is sitting right now.",
+    overbought:   "The price has risen fast lately and may be due for a pause or pullback.",
+    oversold:     "The price has fallen fast lately and may be due for a bounce.",
+    premium:      "Pricier than similar companies — investors are paying up for it.",
+    discount:     "Cheaper than similar companies."
   };
 
   function esc(s) {
@@ -42,7 +46,8 @@
   // template literal, e.g. `<span>${glossTerm("P/E (TTM)", "pe")}</span>`.
   // Unknown key → plain escaped text (no underline), so it can never break a label.
   function glossTerm(label, key) {
-    if (!GLOSSARY[key]) return esc(label);
+    if (!GLOSSARY[key]) return esc(label); // unknown/no key → plain text, no underline
+    scheduleHint(); // a real term was rendered — arm the one-time "tap to learn" hint
     return '<span class="gloss-term" data-gloss="' + esc(key) + '" role="button" tabindex="0" aria-label="' +
       esc(label) + ' — tap to explain">' + esc(label) + "</span>";
   }
@@ -93,6 +98,69 @@
   });
   window.addEventListener("resize", hide);
   window.addEventListener("scroll", hide, true);
+
+  // ---- one-time "tap any underlined term" hint ---------------------------
+  // The first time a signed-in user sees these terms on any page, show a small
+  // dismissible hint, then never again. The "seen" flag is persisted PER USER in
+  // Supabase (user_prefs table, RLS), NOT localStorage. Fails soft: if we can't
+  // read the flag (not signed in, table missing, network), we simply don't nag.
+  var hintSeen = null, hintShown = false, hintQueued = false;
+  var seenResolve, seenReady = new Promise(function (r) { seenResolve = r; });
+
+  function loadSeenFlag() {
+    var auth = window.lidaAuth;
+    if (!auth || !auth.client || !auth.getUser) { hintSeen = true; seenResolve(); return; }
+    auth.getUser().then(function (user) {
+      if (!user) { hintSeen = true; seenResolve(); return; } // not signed in → can't persist, skip
+      auth.client.from("user_prefs").select("glossary_hint_seen").eq("user_id", user.id).maybeSingle()
+        .then(function (res) {
+          if (res && res.error) { hintSeen = true; seenResolve(); return; } // e.g. table not created yet
+          hintSeen = !!(res && res.data && res.data.glossary_hint_seen);
+          seenResolve();
+        }, function () { hintSeen = true; seenResolve(); });
+    }, function () { hintSeen = true; seenResolve(); });
+  }
+
+  function markSeen() {
+    var auth = window.lidaAuth;
+    if (!auth || !auth.client || !auth.getUser) return;
+    auth.getUser().then(function (user) {
+      if (!user) return;
+      auth.client.from("user_prefs")
+        .upsert({ user_id: user.id, glossary_hint_seen: true, updated_at: new Date().toISOString() })
+        .then(function () {}, function () {});
+    }, function () {});
+  }
+
+  // Called when the first real term renders; defers to the next tick so the
+  // term's markup is already in the DOM before the hint points at it.
+  function scheduleHint() {
+    if (hintQueued) return;
+    hintQueued = true;
+    setTimeout(showHintOnce, 0);
+  }
+
+  function showHintOnce() {
+    seenReady.then(function () {
+      if (hintSeen || hintShown) return;
+      hintShown = true;
+      hintSeen = true;  // lock locally so nothing re-triggers it this load
+      markSeen();       // persist per-user so it never shows again
+      var bar = document.createElement("div");
+      bar.className = "gloss-hint";
+      bar.innerHTML =
+        '<span>Tap any <span class="gloss-hint-eg">underlined term</span> to learn what it means.</span>' +
+        '<button type="button" class="gloss-hint-x" aria-label="Dismiss hint">Got it</button>';
+      document.body.appendChild(bar);
+      requestAnimationFrame(function () { bar.classList.add("show"); });
+      bar.querySelector(".gloss-hint-x").addEventListener("click", function () {
+        bar.classList.remove("show");
+        setTimeout(function () { if (bar.parentNode) bar.parentNode.removeChild(bar); }, 220);
+      });
+    });
+  }
+
+  loadSeenFlag();
 
   window.glossTerm = glossTerm;
   window.LIDA_GLOSSARY = GLOSSARY; // exposed so other pages can reuse the same source

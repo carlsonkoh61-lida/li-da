@@ -14,14 +14,16 @@ The honest reason for that order: the biggest unknown in this business isn't "ca
 
 ### M1 — Make it stranger-ready  ← we are here
 The front door has to not confuse or scare a newcomer. This is the UI/UX phase.
-- [ ] **Visual direction decided** (the theme/look — premium, atmospheric; the keystone that unblocks all parked polish)
-- [ ] **A real home / first screen** — the locked positioning (problem → promise) in the locked voice
-- [ ] Make the **Desk the home**; decide the **orb** + **Tasks page** (cut or keep)
+- [x] **Visual direction decided** — "approachable premium," dark hero + light fast-follow (in CLAUDE.md)
+- [x] **Logo decided** — "The Point" (two-tone diamond; ketupat story) (in CLAUDE.md)
+- [x] **A real home / first screen** — the C+D merge, LIVE: manifesto hook → sample read (EXAMPLE-tagged) → search. Replaced the orb at index.html (PR #10)
+- [x] **Anonymous taste-then-gate** — LIVE: one free inline read on home, then sign-up wall; per-browser cookie + per-IP abuse cap (5/24h), fails closed (PR #11)
 - [ ] Parked polish, now with a target: tooltip styling · cached-read label placement · data-panel explanations · read structure/order
 - [ ] **Mobile pass** on the Desk
 - [ ] **Light compliance** (see Gates): disclaimers, "information, not advice," basic Terms + Privacy
-- [ ] **Custom domain** — kills the "Dangerous" warning (now on the critical path, not deferred)
+- [ ] **Custom domain** — kills the "Dangerous" warning (now on the critical path, not deferred) ← NEXT
 - [ ] **Confirm auth/login is solid** — sign-in works, per-user features hold, secure
+- [ ] Decide the **orb** (now replaced) cleanup + the **Tasks page** (cut or keep)
 
 ### M2 — Go quietly live
 - [ ] Deploy on the custom domain — **free, US stocks, to the Malaysian audience** (US-stocks-first defers the Bursa data cost)
@@ -65,3 +67,4 @@ Deliberately not now. Build on validated users.
 - [ ] **Buy the domain** when M1 nears its tail
 - [ ] Commit today's docs (CLAUDE.md, WORKFLOW.md, architecture, this roadmap)
 - [ ] **Name-clearance search** on "Li-Da" — free via MyIPO IP Online + ASEAN TMview + WIPO. Do early, before building the brand further, so it isn't founded on an unusable name (short/common names collide more). Full trademark registration folds into the legal consult.
+- [ ] **Revisit anonymous free-read count** (currently 1/browser via cookie) — Carlson thinks 1 is too few, leaning ~3. Tune `ANON_FREE_READS` after watching real signup/bounce behaviour. (Separate from the per-IP abuse cap, which is 5/24h.)

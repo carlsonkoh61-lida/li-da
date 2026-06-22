@@ -20,6 +20,7 @@
     }).catch(function () {});
   }
 </script>
+<script src="/loader.js" defer></script>
 <style>
   /* Landing page — Li-Da's front door. Colors come ONLY from lida.css tokens. */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -250,7 +251,8 @@
 
       async function runAnonRead(query) {
         busy = true; readBtn.disabled = true;
-        out.innerHTML = '<div class="anon-loading">Reading… (a few seconds)</div>';
+        var loaderCtl = window.lidaLoader ? window.lidaLoader.mount(out) : null;
+        if (!loaderCtl) out.innerHTML = '<div class="anon-loading">Reading… (a few seconds)</div>';
         out.scrollIntoView({ behavior: "smooth", block: "nearest" });
         try {
           var symbol = await resolveSymbol(query);
@@ -273,6 +275,7 @@
           renderRead(symbol, mkt, ana.read);
           bumpAnonReads(); // this browser has now used its free read
         } finally {
+          if (loaderCtl) loaderCtl.stop(); // clear the rotating-fact timer
           busy = false; readBtn.disabled = false;
         }
       }

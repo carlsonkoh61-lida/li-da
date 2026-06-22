@@ -1,16 +1,4 @@
-# Li-Da — Compliance Drafts (Disclaimer · Terms · Privacy)
-
-> **⚠ READ THIS FIRST — Carlson, this is for you, not the public page.**
->
-> These are **sensible, protective starting drafts** — not legal advice, and I am not a lawyer. They lower your risk and cover the basics so you're not naked in front of strangers. **They do NOT make Li-Da licensed.** The core question — whether Li-Da's paid stock analyses require a Securities Commission licence under the CMSA — is a real, open question that a **Malaysian capital-markets lawyer must answer before you charge money.** A disclaimer does not exempt you (the SC has said so directly).
->
-> **Safe sequence:** publish these before strangers (good) → operate FREE while validating (lower risk) → legal consult resolves the licensing question BEFORE you charge (the gate). The lawyer should also review/upgrade these documents and confirm which PDPA obligations (e.g. data-breach notification, DPO) apply to you.
->
-> Fill the bracketed [ ] blanks before publishing. Then hand this to Claude Code to build as pages (`disclaimer.html`, `terms.html`, `privacy.html`) styled with `lida.css`, linked from the footer.
-
----
-
-# 1 · Disclaimer — Not Financial Advice
+# Disclaimer — Not Financial Advice
 
 **Last updated: 22 June 2026**
 
@@ -26,7 +14,7 @@ By using Li-Da, you acknowledge and accept this.
 
 ---
 
-# 2 · Terms of Service
+# Terms of Service
 
 **Last updated: 22 June 2026**
 
@@ -73,7 +61,7 @@ Questions about these Terms: **carlsonkoh61@gmail.com**
 
 ---
 
-# 3 · Privacy Policy
+# Privacy Policy
 
 **Last updated: 22 June 2026**
 

@@ -2,6 +2,8 @@
 // Quote, news, fundamentals, analyst recs, profile, peers, daily price history →
 // technicals + a REAL base-rate (from the stock's own past) → trend-aware, hype-aware read.
 
+import crypto from "node:crypto";
+
 const SYSTEM_PROMPT = `You are the analysis engine for one person's private stock-research tool.
 You are NOT a financial advisor and must never give an order to obey. Your job is decision-support:
 lay out both sides honestly so the person makes their own call.
@@ -436,9 +438,82 @@ async function recordRead(userId, windowStart, used) {
   }
 }
 
+// ---- anonymous (not-signed-in) free-read guard --------------------------
+// Anonymous visitors get a tiny taste: one free FRESH read (the cookie enforces
+// 1/browser for honest users on the home page). This is the real abuse guard —
+// a strict PER-IP cap on fresh reads that protects the Anthropic key from anyone
+// clearing cookies or scripting. We store only a HASH of the IP, never the raw IP.
+//
+// Unlike the logged-in limiter (which FAILS OPEN so a real user is never locked
+// out), the anonymous guard FAILS CLOSED: if we can't confirm the IP is under the
+// cap, we do NOT grant the free read. Never the free read without the IP limit.
+const ANON_IP_FREE_READS = parseInt(process.env.ANON_IP_FREE_READS || "5", 10);
+const ANON_IP_WINDOW_HOURS = parseInt(process.env.ANON_IP_WINDOW_HOURS || "24", 10);
+
+function clientIp(req) {
+  const xff = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  return xff || String(req.headers["x-real-ip"] || "").trim() || "";
+}
+function hashIp(ip) {
+  const salt = process.env.ANON_IP_SALT || "li-da-anon";
+  return crypto.createHash("sha256").update(salt + "|" + ip).digest("hex");
+}
+function anonWindowStartISO() {
+  const ms = Math.max(1, ANON_IP_WINDOW_HOURS) * 3600 * 1000;
+  return new Date(Math.floor(Date.now() / ms) * ms).toISOString(); // fixed bucket
+}
+
+// Returns { allowed, windowStart, used, ipHash }. FAILS CLOSED (allowed:false) on
+// any missing IP / missing config / DB error.
+async function checkAnonIp(req) {
+  const windowStart = anonWindowStartISO();
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SERVICE = process.env.SUPABASE_SERVICE_KEY;
+  const ip = clientIp(req);
+  if (!ip || !SUPABASE_URL || !SERVICE) return { allowed: false, windowStart, used: 0, ipHash: null };
+  const ipHash = hashIp(ip);
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/anon_read_usage?ip_hash=eq.${ipHash}&window_start=eq.${encodeURIComponent(windowStart)}&select=count`,
+      { headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}` } }
+    );
+    if (!r.ok) return { allowed: false, windowStart, used: 0, ipHash }; // fail closed
+    const rows = await r.json();
+    let used = 0;
+    if (Array.isArray(rows) && rows[0] && typeof rows[0].count === "number") used = rows[0].count;
+    return { allowed: used < ANON_IP_FREE_READS, windowStart, used, ipHash };
+  } catch (e) {
+    return { allowed: false, windowStart, used: 0, ipHash }; // fail closed
+  }
+}
+
+// Bump the per-IP counter after a successful anonymous fresh read.
+async function recordAnonRead(ipHash, windowStart, used) {
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SERVICE = process.env.SUPABASE_SERVICE_KEY;
+  if (!ipHash || !SUPABASE_URL || !SERVICE) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/anon_read_usage`, {
+      method: "POST",
+      headers: {
+        apikey: SERVICE,
+        Authorization: `Bearer ${SERVICE}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({ ip_hash: ipHash, window_start: windowStart, count: (used || 0) + 1 }),
+    });
+  } catch (e) {
+    /* a failed counter write must never break a read we already produced */
+  }
+}
+
 export default async function handler(req, res) {
   const _auth = await verifyUser(req);
-  if (!_auth.ok) return res.status(_auth.code).json({ error: _auth.msg });
+  // code 500 = server misconfig (keep failing). A 401 (no/expired token) is NOT
+  // an error here — it just means anonymous, which gets the gated free-read path.
+  if (!_auth.ok && _auth.code === 500) return res.status(500).json({ error: _auth.msg });
+  const isAnon = !_auth.ok;
   const symbol = (req.query.symbol || "").toUpperCase().trim();
   if (!symbol) return res.status(400).json({ error: "Add a symbol, e.g. /api/analyze?symbol=AAPL" });
 
@@ -456,16 +531,31 @@ export default async function handler(req, res) {
       return res.status(200).json({ ...hit.payload, cached: true, cachedAgeSec: Math.round(hit.ageMs / 1000) });
     }
 
-    // Cache miss → this will be an expensive fresh read. Enforce the hourly cap
-    // BEFORE doing any work, so a limited user spends nothing.
-    const rl = await checkRateLimit(_auth.user && _auth.user.id);
-    if (!rl.allowed) {
-      return res.status(429).json({
-        error: "You've reached your hourly read limit — upgrade to read more.",
-        limit: rl.limit,
-        used: rl.used,
-        tier: rl.tier,
-      });
+    // Cache miss → an expensive FRESH read. Enforce the right cap BEFORE any work,
+    // so a capped visitor/user spends nothing.
+    let rl = null, anon = null;
+    if (isAnon) {
+      // Anonymous: strict per-IP cap (fails closed). Over cap → a friendly gated
+      // response (HTTP 200) the home page renders as the sign-up wall — not an error.
+      anon = await checkAnonIp(req);
+      if (!anon.allowed) {
+        return res.status(200).json({
+          gated: true,
+          reason: "anon_limit",
+          message: "That's your free read. Create a free account to read any stock — still free, no card needed.",
+        });
+      }
+    } else {
+      // Logged-in: per-user hourly limit (unchanged; fails open).
+      rl = await checkRateLimit(_auth.user && _auth.user.id);
+      if (!rl.allowed) {
+        return res.status(429).json({
+          error: "You've reached your hourly read limit — upgrade to read more.",
+          limit: rl.limit,
+          used: rl.used,
+          tier: rl.tier,
+        });
+      }
     }
 
     const base = "https://finnhub.io/api/v1";
@@ -569,6 +659,10 @@ export default async function handler(req, res) {
 
     const result = { symbol, read, news, figures, analyst, peers, technicals, hype, regime, redFlags, earnings, insider };
     await writeCache(symbol, result); // share this read for the next 15 min
+    if (isAnon) {
+      await recordAnonRead(anon.ipHash, anon.windowStart, anon.used); // count this free read against the per-IP cap
+      return res.status(200).json({ ...result, cached: false, anon: true });
+    }
     await recordRead(_auth.user && _auth.user.id, rl.windowStart, rl.used); // count this fresh read
     return res.status(200).json({ ...result, cached: false });
   } catch (err) {

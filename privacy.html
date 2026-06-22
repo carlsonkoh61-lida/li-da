@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Li-Da · Privacy Policy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/lida.css" />
+<style>
+  /* Legal page — colors come ONLY from lida.css tokens. Plain, readable, phone-first. */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--ink-dim); font-family: var(--font-body); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+  .legal { max-width: 680px; margin: 0 auto; padding: 26px 22px 64px; }
+  .brand { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: 2px; color: var(--ink); text-decoration: none; }
+  .diamond { position: relative; width: 12px; height: 14px; display: inline-block; margin: 0 1px; }
+  .diamond span { position: absolute; inset: 0; }
+  .diamond .d-r { clip-path: polygon(50% 8%, 100% 50%, 50% 92%); background: var(--gold); }
+  .diamond .d-l { clip-path: polygon(50% 8%, 0 50%, 50% 92%); background: var(--accent); }
+  h1 { font-family: var(--font-display); font-weight: 600; font-size: 26px; line-height: 1.2; letter-spacing: -0.3px; color: var(--ink); margin: 26px 0 6px; }
+  .updated { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-bottom: 26px; }
+  .lead { color: var(--ink); font-size: 15px; line-height: 1.7; margin: 0 0 14px; }
+  .legal h2 { font-family: var(--font-display); font-weight: 600; font-size: 16px; color: var(--ink); margin: 26px 0 8px; }
+  .legal p { font-size: 14.5px; line-height: 1.7; margin: 0 0 12px; }
+  .legal ul { margin: 0 0 14px; padding-left: 20px; }
+  .legal li { font-size: 14.5px; line-height: 1.7; margin-bottom: 9px; }
+  .legal strong { color: var(--ink); font-weight: 600; }
+  .legal a { color: var(--accent); }
+  .legal-foot { margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--line); font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+  .legal-foot a { color: var(--muted); text-decoration: none; }
+  .legal-foot a:hover { color: var(--accent); }
+  @media (min-width: 600px) { h1 { font-size: 30px; } }
+</style>
+</head>
+<body>
+  <div class="legal">
+    <a class="brand" href="/">LI<span class="diamond"><span class="d-r"></span><span class="d-l"></span></span>DA</a>
+
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: 22 June 2026</p>
+
+    <p class="lead">Li-Da respects your privacy and handles personal data in line with Malaysia's <strong>Personal Data Protection Act 2010 (as amended).</strong> This notice explains what we collect, why, and your rights. By using Li-Da, you consent to the practices described here.</p>
+
+    <h2>1. Who we are</h2>
+    <p>Li-Da is operated by <strong>Carlson Koh</strong> ("we"), the data controller. Contact for any privacy matter: <strong>carlsonkoh61@gmail.com</strong>.</p>
+
+    <h2>2. What we collect</h2>
+    <ul>
+      <li><strong>Account data:</strong> your email address (and authentication details handled by our login provider).</li>
+      <li><strong>Your activity in Li-Da:</strong> the stocks you read, save, watchlist, set alerts on, and your journal/decision logs.</li>
+      <li><strong>Technical/usage data:</strong> basic logs, and a <strong>one-way hashed (not raw) version of your IP address</strong> used only to limit abuse of free reads.</li>
+      <li><strong>Cookies:</strong> a small functional cookie to run the free-read limit and keep you signed in. We don't use advertising or tracking cookies.</li>
+    </ul>
+    <p>We collect only what we need to run the service.</p>
+
+    <h2>3. Why we use it</h2>
+    <p>To provide and secure the service, generate your reads, save your history, send alerts you've asked for, prevent abuse, and improve Li-Da. We do <strong>not</strong> sell your personal data.</p>
+
+    <h2>4. Who we share it with (our service providers)</h2>
+    <p>We use trusted third-party providers to run Li-Da. They process data on our behalf, only as needed:</p>
+    <ul>
+      <li><strong>Supabase</strong> — database and authentication (stores your account and activity).</li>
+      <li><strong>Vercel</strong> — hosting.</li>
+      <li><strong>Anthropic (Claude)</strong> — generates the AI read. We send it <strong>market data and the ticker</strong> you ask about — <strong>not your name or email.</strong></li>
+      <li><strong>Finnhub / Twelve Data</strong> — market-data providers; they receive only the ticker symbol, not your personal data.</li>
+      <li><strong>Resend</strong> — sends alert emails (receives the email address for delivery).</li>
+    </ul>
+
+    <h2>5. Data stored outside Malaysia (cross-border transfer)</h2>
+    <p>Our providers above operate <strong>servers outside Malaysia.</strong> By using Li-Da and providing your data, you <strong>consent to your personal data being transferred to and processed in those locations</strong> for the purposes in this notice. We take reasonable steps to ensure your data is protected to a comparable standard.</p>
+
+    <h2>6. How we protect it</h2>
+    <p>We use access controls (row-level security on our database), encryption in transit (HTTPS), service-key isolation for sensitive operations, and hashed (not raw) IP storage. No system is perfectly secure, but we take practical steps to protect your data.</p>
+
+    <h2>7. How long we keep it</h2>
+    <p>We keep your data while your account is active and as needed to provide the service. You can ask us to delete your account and associated data.</p>
+
+    <h2>8. Your rights</h2>
+    <p>You may <strong>access, correct, or delete</strong> your personal data, <strong>withdraw consent</strong>, or request a copy of your data, by emailing <strong>carlsonkoh61@gmail.com</strong>. We'll respond within a reasonable time as required by law. If we ever become aware of a personal-data breach that may affect you, we'll act in line with our legal obligations.</p>
+
+    <h2>9. Children</h2>
+    <p>Li-Da is not intended for anyone under 18, and we don't knowingly collect data from minors.</p>
+
+    <h2>10. Changes</h2>
+    <p>We may update this notice; the "last updated" date will change. Material changes will be highlighted.</p>
+
+    <h2>11. Contact</h2>
+    <p>Privacy questions or requests: <strong>carlsonkoh61@gmail.com</strong></p>
+
+    <div class="legal-foot">
+      <a href="/disclaimer.html">Disclaimer</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a>
+    </div>
+  </div>
+</body>
+</html>

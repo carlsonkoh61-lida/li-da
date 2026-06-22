@@ -19,11 +19,11 @@ The front door has to not confuse or scare a newcomer. This is the UI/UX phase.
 - [x] **A real home / first screen** — the C+D merge, LIVE: manifesto hook → sample read (EXAMPLE-tagged) → search. Replaced the orb at index.html (PR #10)
 - [x] **Anonymous taste-then-gate** — LIVE: one free inline read on home, then sign-up wall; per-browser cookie + per-IP abuse cap (5/24h), fails closed (PR #11)
 - [ ] Parked polish, now with a target: tooltip styling · cached-read label placement · data-panel explanations · read structure/order
-- [ ] **Mobile pass** on the Desk
-- [ ] **Light compliance** (see Gates): disclaimers, "information, not advice," basic Terms + Privacy
-- [ ] **Custom domain** — kills the "Dangerous" warning (now on the critical path, not deferred) ← NEXT
+- [ ] **Mobile/desktop pass** on the Desk (phone-first done; Desk looks sparse on wide desktop — needs a centered max-width pass)
+- [ ] **Light compliance** (see Gates): disclaimers, "information, not advice," basic Terms + Privacy ← NEXT
+- [x] **Custom domain** — DONE: `li-da.app` live & secure (Cloudflare registrar, auto-configured DNS). "Dangerous" warning gone. (`www` redirect → apex; confirm www row goes green in Vercel)
 - [ ] **Confirm auth/login is solid** — sign-in works, per-user features hold, secure
-- [ ] Decide the **orb** (now replaced) cleanup + the **Tasks page** (cut or keep)
+- [x] **Nav cleanup** — DONE: removed Home + Tasks from signed-in nav; signed-in users land on Desk (Tasks page kept in repo, unlinked)
 
 ### M2 — Go quietly live
 - [ ] Deploy on the custom domain — **free, US stocks, to the Malaysian audience** (US-stocks-first defers the Bursa data cost)

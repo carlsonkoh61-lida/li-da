@@ -125,3 +125,13 @@ html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 }
 .gloss-hint-x:hover { border-color: var(--accent); }
 
+/* ---- Li·Da logo mark — "The Point" ----
+   The dot in the wordmark, as a small diamond split two ways: steel-blue (the
+   bull case, left) and brass-gold (the bear case, right). Same construct as the
+   home page; em-sized so it scales crisply from the small nav to large headings.
+   Usage:  LI<span class="lida-dot"><span class="d-r"></span><span class="d-l"></span></span>DA */
+.lida-dot { position: relative; display: inline-block; width: 0.64em; height: 0.76em; margin: 0 0.08em; vertical-align: middle; }
+.lida-dot span { position: absolute; inset: 0; }
+.lida-dot .d-r { clip-path: polygon(50% 8%, 100% 50%, 50% 92%); background: var(--gold); }
+.lida-dot .d-l { clip-path: polygon(50% 8%, 0 50%, 50% 92%); background: var(--accent); }
+

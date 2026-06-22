@@ -41,7 +41,8 @@
 
   var nav = document.createElement("nav");
   nav.className = "lida-shell";
-  var html = '<span class="lida-shell-brand">Li-Da</span>';
+  // Wordmark uses the shared "The Point" diamond mark (.lida-dot in lida.css).
+  var html = '<span class="lida-shell-brand">LI<span class="lida-dot"><span class="d-r"></span><span class="d-l"></span></span>DA</span>';
   ROOMS.forEach(function (r) {
     var active = base(r.href) === cur;
     html += '<a class="lida-shell-link' + (active ? " active" : "") + '" href="' + r.href + '">' + r.label + "</a>";

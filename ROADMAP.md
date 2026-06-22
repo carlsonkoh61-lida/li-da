@@ -74,3 +74,16 @@ Deliberately not now. Build on validated users.
 ## Polish before the public push (M5) — not blockers for validation
 - [ ] **Custom auth domain** (e.g. `auth.li-da.app`) so Google's consent screen says "li-da.app" instead of the raw `kwwjapbmkslbfdddbukn.supabase.co`. Cosmetic/trust polish; needs a Supabase custom-domain setup (may be a paid tier) + DNS. Login already works without it. Do before the polished public launch, not before the first ~10 strangers.
 - [ ] **Publish the Google OAuth app + verification** (currently in Testing mode, 100-user cap; fine for validation). Publish/verify before scaling past ~100 users or going truly public.
+
+## Login methods — watch, don't pre-build
+- Now: Google one-tap + email = enough for validation. Google fits Android-heavy SEA well (most Malaysians have a Google account on their phone).
+- Likely next IF friction shows at the wall: **phone-number / OTP login** (SMS or WhatsApp code) — often the MOST native onboarding for the Malay mass-market (how Grab/Shopee/local apps do it). Supabase supports phone auth; note ongoing per-SMS cost (e.g. Twilio).
+- Lower priority: **Apple login** — only matters for the (smaller, wealthier) iPhone slice; not needed for web. 
+- Principle: add login methods in response to REAL observed signup friction from the first strangers, not anticipated friction. Measure, then add.
+
+## Regional login expansion (Phase 2 — as Li-Da expands beyond Malaysia)
+Tie each provider to the country it actually unlocks; add only when entering that market, driven by real friction, not pre-built.
+- **LINE** — dominant in Thailand (and big in Taiwan/Japan). The default identity rail for Thai users; near-essential when entering Thailand. Supabase supports LINE OAuth.
+- **Indonesia / Vietnam / Philippines / Singapore** — no single "LINE-equivalent" monopolises these; the strongest universal rail is usually **phone-number / OTP login** (WhatsApp huge in ID/MY; Zalo dominant in Vietnam; Messenger/Viber in PH). So the highest-leverage regional move is robust **phone-OTP**, not a pile of social buttons. Consider Zalo specifically for Vietnam later if data shows it.
+- Google + Apple cover the cross-regional Android/iPhone baseline everywhere.
+- Principle (repeat): add a provider when ENTERING that market and only if real signup friction shows — each one is setup work + (for phone) ongoing SMS cost. Localised login is part of localising the whole product (language, market data, payments), not a standalone task.

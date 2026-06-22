@@ -20,9 +20,11 @@ The front door has to not confuse or scare a newcomer. This is the UI/UX phase.
 - [x] **Anonymous taste-then-gate** — LIVE: one free inline read on home, then sign-up wall; per-browser cookie + per-IP abuse cap (5/24h), fails closed (PR #11)
 - [ ] Parked polish, now with a target: tooltip styling · cached-read label placement · data-panel explanations · read structure/order
 - [ ] **Mobile/desktop pass** on the Desk (phone-first done; Desk looks sparse on wide desktop — needs a centered max-width pass)
-- [ ] **Light compliance** (see Gates): disclaimers, "information, not advice," basic Terms + Privacy ← NEXT
+- [x] **Light compliance** — DONE: Disclaimer / Terms / Privacy pages live & footer-linked (PR #13). NOTE: covers data + reduces risk but does NOT resolve the licensing question — that's the legal consult (a disclaimer ≠ a licence; SC says so directly)
 - [x] **Custom domain** — DONE: `li-da.app` live & secure (Cloudflare registrar, auto-configured DNS). "Dangerous" warning gone. (`www` redirect → apex; confirm www row goes green in Vercel)
 - [ ] **Confirm auth/login is solid** — sign-in works, per-user features hold, secure
+- [ ] **Read loading experience** — show the work while a read generates (step labels / skeleton card / calm on-brand copy). Felt-speed fix; no engine change. (Later, optional: stream the read as it generates — real build.)
+- [ ] **One-tap / Google (OAuth) login** — late-M1 conversion finish, before the stranger push. Supabase supports it; needs OAuth provider setup (Google Cloud creds + redirect URLs) + the button. Lowers sign-up friction at the wall (big for mobile SEA). Real work, not a toggle; not a launch blocker, but a leaky sign-up wastes earned traffic.
 - [x] **Nav cleanup** — DONE: removed Home + Tasks from signed-in nav; signed-in users land on Desk (Tasks page kept in repo, unlinked)
 
 ### M2 — Go quietly live
@@ -67,4 +69,4 @@ Deliberately not now. Build on validated users.
 - [ ] **Buy the domain** when M1 nears its tail
 - [ ] Commit today's docs (CLAUDE.md, WORKFLOW.md, architecture, this roadmap)
 - [ ] **Name-clearance search** on "Li-Da" — free via MyIPO IP Online + ASEAN TMview + WIPO. Do early, before building the brand further, so it isn't founded on an unusable name (short/common names collide more). Full trademark registration folds into the legal consult.
-- [ ] **Revisit anonymous free-read count** (currently 1/browser via cookie) — Carlson thinks 1 is too few, leaning ~3. Tune `ANON_FREE_READS` after watching real signup/bounce behaviour. (Separate from the per-IP abuse cap, which is 5/24h.)
+- [x] **Anonymous free-read count** — bumped 1 → 3 per browser (PR to bump shipped). Revisit again after watching real signup/bounce data. (Separate from the per-IP abuse cap, which is 5/24h.)

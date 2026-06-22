@@ -66,7 +66,11 @@ Deliberately not now. Build on validated users.
 
 ## Do-now actions (in parallel, don't block on them)
 - [ ] **Book the legal consult** — it gates charging and has lead time
-- [ ] **Buy the domain** when M1 nears its tail
+- [x] **Buy the domain** — DONE: li-da.app (Cloudflare), live & connected to Vercel
 - [ ] Commit today's docs (CLAUDE.md, WORKFLOW.md, architecture, this roadmap)
 - [ ] **Name-clearance search** on "Li-Da" — free via MyIPO IP Online + ASEAN TMview + WIPO. Do early, before building the brand further, so it isn't founded on an unusable name (short/common names collide more). Full trademark registration folds into the legal consult.
 - [x] **Anonymous free-read count** — bumped 1 → 3 per browser (PR to bump shipped). Revisit again after watching real signup/bounce data. (Separate from the per-IP abuse cap, which is 5/24h.)
+
+## Polish before the public push (M5) — not blockers for validation
+- [ ] **Custom auth domain** (e.g. `auth.li-da.app`) so Google's consent screen says "li-da.app" instead of the raw `kwwjapbmkslbfdddbukn.supabase.co`. Cosmetic/trust polish; needs a Supabase custom-domain setup (may be a paid tier) + DNS. Login already works without it. Do before the polished public launch, not before the first ~10 strangers.
+- [ ] **Publish the Google OAuth app + verification** (currently in Testing mode, 100-user cap; fine for validation). Publish/verify before scaling past ~100 users or going truly public.

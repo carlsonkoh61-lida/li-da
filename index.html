@@ -201,7 +201,9 @@
     //                  abuse guard is the per-IP cap inside /api/analyze.
     (function () {
       // Tunable: how many free reads an anonymous browser gets before the wall.
-      var ANON_FREE_READS = 1;
+      // Keep this <= the server's ANON_IP_FREE_READS (default 5) so the per-IP
+      // cap doesn't wall a single honest browser before it gets its free reads.
+      var ANON_FREE_READS = 3;
 
       var input = document.getElementById("q");
       var readBtn = document.getElementById("readBtn");

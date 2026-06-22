@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/auth.js"></script>
 <script src="/glossary.js" defer></script>
+<script src="/loader.js" defer></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -1109,13 +1110,17 @@
 
   async function getAnalysis(sym) {
     const box = document.createElement("div");
-    box.className = "read thinking";
-    box.textContent = "Thinking through the read\u2026 (a few seconds)";
+    box.className = "read";
     out.appendChild(box);
+    // Calm shared loading state while the read generates (loader.js). Falls back
+    // to plain text if the component isn't loaded.
+    const loaderCtl = window.lidaLoader ? window.lidaLoader.mount(box) : null;
+    if (!loaderCtl) { box.className = "read thinking"; box.textContent = "Thinking through the read\u2026 (a few seconds)"; }
     try {
       const _s = window.lidaAuth ? await window.lidaAuth.getSession() : null;
       const res = await fetch("/api/analyze?symbol=" + encodeURIComponent(sym), { headers: { Authorization: "Bearer " + (_s ? _s.access_token : "") } });
       const d = await res.json();
+      if (loaderCtl) loaderCtl.stop();
       if (!res.ok) {
         box.className = "read";
         if (res.status === 429) {
@@ -1147,6 +1152,7 @@
       out.insertAdjacentHTML("beforeend", renderMove());
       wireMove();
     } catch (e) {
+      if (loaderCtl) loaderCtl.stop();
       box.className = "read";
       box.innerHTML = `<p class="error" style="margin:0">Couldn't reach the read service. Try again.</p>`;
     }

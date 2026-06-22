@@ -11,6 +11,15 @@
 <link rel="stylesheet" href="/lida.css" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/auth.js"></script>
+<script>
+  // Signed-in visitors land on the Desk, not this marketing page. Signed-out
+  // visitors stay here. (Resolves a tick after load — a brief flash is fine.)
+  if (window.lidaAuth) {
+    window.lidaAuth.getSession().then(function (s) {
+      if (s && s.user) window.location.replace("/research.html");
+    }).catch(function () {});
+  }
+</script>
 <style>
   /* Landing page — Li-Da's front door. Colors come ONLY from lida.css tokens. */
   * { box-sizing: border-box; margin: 0; padding: 0; }

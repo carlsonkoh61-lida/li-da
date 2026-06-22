@@ -32,8 +32,8 @@
   ];
 
   var STATUS = "Pulling the latest data and weighing both sides…";
-  var ROTATE_MS = 5000; // fade to another fact if the wait runs past ~5s
-  var FADE_MS = 320;    // keep in sync with the .lida-loader-fact transition
+  var VISIBLE_MS = 7000; // a fact stays FULLY visible this long, THEN cross-fades
+  var FADE_MS = 320;     // keep in sync with the .lida-loader-fact transition
   var last = -1;
 
   // Random fact index, never the immediately-previous one.
@@ -58,17 +58,25 @@
     if (factEl) factEl.textContent = FACTS[pick()];   // textContent → emojis render, no escaping
     if (statusEl) statusEl.textContent = STATUS;
 
-    var timer = setInterval(function () {
-      if (!factEl || !factEl.isConnected) { clearInterval(timer); return; } // self-clear if detached
-      factEl.classList.add("is-fading");
-      setTimeout(function () {
-        if (!factEl || !factEl.isConnected) return;
-        factEl.textContent = FACTS[pick()];
-        factEl.classList.remove("is-fading");
-      }, FADE_MS);
-    }, ROTATE_MS);
+    // Recursive timeout (not setInterval) so the 7s is PURE fully-visible time:
+    // show fact → wait 7s → fade out → swap → fade in → repeat. A mid-cycle finish
+    // just stops cleanly (both timers cleared; the whole loader is removed anyway).
+    var visTimer = null, fadeTimer = null;
+    function schedule() {
+      visTimer = setTimeout(function () {
+        if (!factEl || !factEl.isConnected) return; // detached → stop quietly
+        factEl.classList.add("is-fading");          // fade out
+        fadeTimer = setTimeout(function () {
+          if (!factEl || !factEl.isConnected) return;
+          factEl.textContent = FACTS[pick()];        // swap text while invisible
+          factEl.classList.remove("is-fading");       // fade back in
+          schedule();                                  // another 7s fully visible
+        }, FADE_MS);
+      }, VISIBLE_MS);
+    }
+    schedule();
 
-    return { stop: function () { clearInterval(timer); } };
+    return { stop: function () { clearTimeout(visTimer); clearTimeout(fadeTimer); } };
   }
 
   window.lidaLoader = { mount: mount, facts: FACTS };

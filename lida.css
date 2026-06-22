@@ -142,7 +142,7 @@ html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 .lida-loader { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; padding: 34px 18px; }
 .lida-loader-mark { font-family: var(--font-display); font-weight: 600; font-size: 30px; letter-spacing: 2px; color: var(--ink); }
 .lida-loader-mark .lida-dot { animation: lida-dot-pulse 2.4s ease-in-out infinite; }
-.lida-loader-fact { font-family: var(--font-body); font-size: 14px; line-height: 1.55; color: var(--ink-dim); max-width: 360px; transition: opacity 0.32s ease; }
+.lida-loader-fact { display: flex; align-items: center; justify-content: center; min-height: 4.6em; font-family: var(--font-body); font-size: 14px; line-height: 1.55; color: var(--ink-dim); max-width: 360px; transition: opacity 0.32s ease; }
 .lida-loader-fact.is-fading { opacity: 0; }
 .lida-loader-status { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.04em; color: var(--muted); }
 @keyframes lida-dot-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }

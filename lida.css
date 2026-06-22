@@ -151,3 +151,20 @@ html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
   .lida-loader-fact { transition: none; }
 }
 
+/* full-screen loading overlay ("loading wall", loader.js) — a soft dimmed wall
+   above ALL content (incl. the nav) while a read generates; fades out to reveal
+   the finished read. Sits over the page instead of inside it, so there's no
+   layout reflow. Tokens only. */
+.lida-overlay {
+  position: fixed; inset: 0; z-index: 10000;            /* above the nav (9999) */
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  opacity: 0; transition: opacity 0.3s ease;
+  overscroll-behavior: contain; touch-action: none;     /* no scroll-chaining to the page */
+}
+.lida-overlay::before { content: ""; position: absolute; inset: 0; background: var(--bg); opacity: 0.86; } /* the soft dim */
+.lida-overlay > .lida-loader { position: relative; }    /* above the ::before dim */
+.lida-overlay.is-visible { opacity: 1; }
+.lida-noscroll { overflow: hidden !important; }          /* lock page scroll while the wall is up */
+@media (prefers-reduced-motion: reduce) { .lida-overlay { transition: none; } }
+

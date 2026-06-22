@@ -251,9 +251,11 @@
 
       async function runAnonRead(query) {
         busy = true; readBtn.disabled = true;
-        var loaderCtl = window.lidaLoader ? window.lidaLoader.mount(out) : null;
-        if (!loaderCtl) out.innerHTML = '<div class="anon-loading">Reading… (a few seconds)</div>';
-        out.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        // Full-screen overlay while the read generates; the result renders into
+        // `out` underneath and is revealed when the overlay fades. Fallback: plain text.
+        var useOverlay = !!(window.lidaLoader && window.lidaLoader.show);
+        if (useOverlay) window.lidaLoader.show();
+        else { out.innerHTML = '<div class="anon-loading">Reading… (a few seconds)</div>'; out.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
         try {
           var symbol = await resolveSymbol(query);
           // /api/market (name + live price) and /api/analyze (the read, anonymous —
@@ -275,7 +277,7 @@
           renderRead(symbol, mkt, ana.read);
           bumpAnonReads(); // this browser has now used its free read
         } finally {
-          if (loaderCtl) loaderCtl.stop(); // clear the rotating-fact timer
+          if (useOverlay) window.lidaLoader.hide(); // fade out, reveal the read
           busy = false; readBtn.disabled = false;
         }
       }

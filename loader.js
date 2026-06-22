@@ -1,13 +1,14 @@
 // loader.js — Li-Da's shared, calm read-loading state.
 //
 // One component used in BOTH places a read is awaited: the anonymous inline read
-// on the home page and the Desk read flow. It shows the LI·DA mark (the diamond
-// dot gently pulsing — a quiet heartbeat while it weighs both sides), a rotating
-// "fact" line, and an honest, generic status line. Purely cosmetic — it does not
-// touch the read, the data calls, or the model.
+// on the home page and the Desk read flow. It shows a soft full-screen overlay
+// ("loading wall") with the LI·DA mark (the diamond dot gently pulsing — a quiet
+// heartbeat while it weighs both sides), ONE steady fact, and an honest status
+// line. When the read is ready, the overlay fades out to reveal it underneath.
+// Purely cosmetic — it does not touch the read, the data calls, or the model.
 //
-// Usage:  var ctl = window.lidaLoader.mount(containerEl);   // renders + starts
-//         ...when the read resolves...  ctl.stop();          // clears the timer
+// Usage:  window.lidaLoader.show();   // raise the overlay
+//         ...when the read resolves...  window.lidaLoader.hide();
 
 (function () {
   // Easy to extend — just add lines. Emojis are intentional.
@@ -32,11 +33,12 @@
   ];
 
   var STATUS = "Pulling the latest data and weighing both sides…";
-  var VISIBLE_MS = 7000; // a fact stays FULLY visible this long, THEN cross-fades
-  var FADE_MS = 320;     // keep in sync with the .lida-loader-fact transition
+  var FADE_MS = 300; // overlay fade-out duration — keep in sync with the CSS transition
   var last = -1;
 
-  // Random fact index, never the immediately-previous one.
+  var overlay = null, removeTimer = null;
+
+  // Random fact index, never the immediately-previous one (variety across loads).
   function pick() {
     if (FACTS.length <= 1) return 0;
     var i;
@@ -45,39 +47,51 @@
     return i;
   }
 
-  function mount(container) {
-    if (!container) return { stop: function () {} };
-    container.innerHTML =
+  function lockScroll() {
+    document.documentElement.classList.add("lida-noscroll");
+    if (document.body) document.body.classList.add("lida-noscroll");
+  }
+  function unlockScroll() {
+    document.documentElement.classList.remove("lida-noscroll");
+    if (document.body) document.body.classList.remove("lida-noscroll");
+  }
+
+  // Raise the soft full-screen overlay with ONE steady fact (no rotation).
+  function show() {
+    if (overlay) return;             // already up
+    clearTimeout(removeTimer);
+    overlay = document.createElement("div");
+    overlay.className = "lida-overlay";
+    overlay.setAttribute("role", "status");
+    overlay.setAttribute("aria-live", "polite");
+    overlay.innerHTML =
       '<div class="lida-loader">' +
         '<div class="lida-loader-mark">LI<span class="lida-dot"><span class="d-r"></span><span class="d-l"></span></span>DA</div>' +
         '<div class="lida-loader-fact"></div>' +
         '<div class="lida-loader-status"></div>' +
       "</div>";
-    var factEl = container.querySelector(".lida-loader-fact");
-    var statusEl = container.querySelector(".lida-loader-status");
-    if (factEl) factEl.textContent = FACTS[pick()];   // textContent → emojis render, no escaping
+    var factEl = overlay.querySelector(".lida-loader-fact");
+    var statusEl = overlay.querySelector(".lida-loader-status");
+    if (factEl) factEl.textContent = FACTS[pick()];  // textContent → emojis render, no escaping
     if (statusEl) statusEl.textContent = STATUS;
-
-    // Recursive timeout (not setInterval) so the 7s is PURE fully-visible time:
-    // show fact → wait 7s → fade out → swap → fade in → repeat. A mid-cycle finish
-    // just stops cleanly (both timers cleared; the whole loader is removed anyway).
-    var visTimer = null, fadeTimer = null;
-    function schedule() {
-      visTimer = setTimeout(function () {
-        if (!factEl || !factEl.isConnected) return; // detached → stop quietly
-        factEl.classList.add("is-fading");          // fade out
-        fadeTimer = setTimeout(function () {
-          if (!factEl || !factEl.isConnected) return;
-          factEl.textContent = FACTS[pick()];        // swap text while invisible
-          factEl.classList.remove("is-fading");       // fade back in
-          schedule();                                  // another 7s fully visible
-        }, FADE_MS);
-      }, VISIBLE_MS);
-    }
-    schedule();
-
-    return { stop: function () { clearTimeout(visTimer); clearTimeout(fadeTimer); } };
+    document.body.appendChild(overlay);
+    lockScroll();
+    void overlay.offsetWidth;          // force reflow so the fade-in transition runs
+    overlay.classList.add("is-visible");
   }
 
-  window.lidaLoader = { mount: mount, facts: FACTS };
+  // Fade the overlay out and reveal the finished read underneath.
+  function hide() {
+    if (!overlay) return;
+    var el = overlay;
+    overlay = null;
+    el.classList.remove("is-visible");
+    clearTimeout(removeTimer);
+    removeTimer = setTimeout(function () {
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+      if (!overlay) unlockScroll();    // only unlock if no newer overlay is up
+    }, FADE_MS);
+  }
+
+  window.lidaLoader = { show: show, hide: hide, facts: FACTS };
 })();

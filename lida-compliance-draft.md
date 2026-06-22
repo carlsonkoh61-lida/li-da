@@ -12,7 +12,7 @@
 
 # 1 · Disclaimer — Not Financial Advice
 
-**Last updated: [DATE]**
+**Last updated: 22 June 2026**
 
 Li-Da gives you **information and a second opinion to think with — not financial advice.**
 
@@ -28,9 +28,9 @@ By using Li-Da, you acknowledge and accept this.
 
 # 2 · Terms of Service
 
-**Last updated: [DATE]**
+**Last updated: 22 June 2026**
 
-Welcome to Li-Da. These Terms are a plain-language agreement between you and **[your name / entity once registered]** ("Li-Da", "we", "us"). By using the site or creating an account, you agree to them. If you don't agree, please don't use Li-Da.
+Welcome to Li-Da. These Terms are a plain-language agreement between you and **Carlson Koh** ("Li-Da", "we", "us"). By using the site or creating an account, you agree to them. If you don't agree, please don't use Li-Da.
 
 ### 1. What Li-Da is (and isn't)
 Li-Da is a browser-based stock-**research and decision-support tool**. It pulls market data and produces an AI-generated "read" — a bull case, a bear case, a confidence level, and price levels to consider — to help you think before you trade. **Li-Da does not give financial advice, does not manage money, and does not execute or place any trades.** See the Disclaimer, which forms part of these Terms.
@@ -69,18 +69,18 @@ You may stop using Li-Da any time. We may suspend or end access if these Terms a
 These Terms are governed by the laws of **Malaysia**, and disputes are subject to the Malaysian courts.
 
 ### 13. Contact
-Questions about these Terms: **[contact email]**
+Questions about these Terms: **carlsonkoh61@gmail.com**
 
 ---
 
 # 3 · Privacy Policy
 
-**Last updated: [DATE]**
+**Last updated: 22 June 2026**
 
 Li-Da respects your privacy and handles personal data in line with Malaysia's **Personal Data Protection Act 2010 (as amended).** This notice explains what we collect, why, and your rights. By using Li-Da, you consent to the practices described here.
 
 ### 1. Who we are
-Li-Da is operated by **[your name / entity]** ("we"), the data controller. Contact for any privacy matter: **[contact email]**.
+Li-Da is operated by **Carlson Koh** ("we"), the data controller. Contact for any privacy matter: **carlsonkoh61@gmail.com**.
 
 ### 2. What we collect
 - **Account data:** your email address (and authentication details handled by our login provider).
@@ -111,7 +111,7 @@ We use access controls (row-level security on our database), encryption in trans
 We keep your data while your account is active and as needed to provide the service. You can ask us to delete your account and associated data.
 
 ### 8. Your rights
-You may **access, correct, or delete** your personal data, **withdraw consent**, or request a copy of your data, by emailing **[contact email]**. We'll respond within a reasonable time as required by law. If we ever become aware of a personal-data breach that may affect you, we'll act in line with our legal obligations.
+You may **access, correct, or delete** your personal data, **withdraw consent**, or request a copy of your data, by emailing **carlsonkoh61@gmail.com**. We'll respond within a reasonable time as required by law. If we ever become aware of a personal-data breach that may affect you, we'll act in line with our legal obligations.
 
 ### 9. Children
 Li-Da is not intended for anyone under 18, and we don't knowingly collect data from minors.
@@ -120,4 +120,4 @@ Li-Da is not intended for anyone under 18, and we don't knowingly collect data f
 We may update this notice; the "last updated" date will change. Material changes will be highlighted.
 
 ### 11. Contact
-Privacy questions or requests: **[contact email]**
+Privacy questions or requests: **carlsonkoh61@gmail.com**

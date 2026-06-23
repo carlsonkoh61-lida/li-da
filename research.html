@@ -1159,6 +1159,7 @@
   }
 
   async function getRead(opts) {
+    hideAC();   // close any open suggestion list the moment a read starts (button, Enter, pick, or URL)
     opts = opts || {};
     const sym = input.value.trim().toUpperCase();
     if (!sym) { input.focus(); return; }

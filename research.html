@@ -1139,8 +1139,8 @@
       box.outerHTML = renderRead(d.read);
       // Honest note when this read came from the shared 15-min cache. The hero
       // price above is still live (separate /api/market call) — only the read is cached.
-      // It must live INSIDE the .read block: on desktop #out is a grid with named
-      // areas, so a stray child of #out has no grid-area and won't render.
+      // It must live INSIDE the .read block: #out is a flex column with explicitly
+      // ordered children, so a stray direct child of #out would render out of place.
       if (d.cached) {
         const sec = d.cachedAgeSec || 0;
         const age = sec < 60 ? "under 1m old" : Math.round(sec / 60) + "m old";

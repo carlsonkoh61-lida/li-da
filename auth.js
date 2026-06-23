@@ -49,13 +49,26 @@
     // Call at the top of any page that should require login.
     // Redirects to the login screen (remembering where you were) if not signed in.
     requireAuth: function (loginPath) {
-      return this.getSession().then(function (session) {
-        if (!session) {
+      var self = this;
+      return new Promise(function (resolve) {
+        var settled = false;
+        function decide(session) {
+          if (settled) return;
+          settled = true;
+          if (session && session.user) { resolve(session.user); return; }
           var dest = loginPath || "/login.html";
           window.location.href = dest + "?next=" + encodeURIComponent(window.location.pathname);
-          return null;
+          resolve(null);
         }
-        return session.user;
+        // Decide on the DEFINITIVE initial auth state: INITIAL_SESSION fires once
+        // the client has restored any saved session from storage and processed an
+        // OAuth redirect — so we never redirect before the session has loaded.
+        // (Deciding off a single early getSession() was the "kicked on reload" bug.)
+        client.auth.onAuthStateChange(function (event, session) {
+          if (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED") decide(session);
+        });
+        // Positive-path safety net if the client was already initialized before we subscribed.
+        self.getSession().then(function (session) { if (session && session.user) decide(session); });
       });
     },
 

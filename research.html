@@ -358,7 +358,22 @@
   @keyframes lida-scan { to { transform: translateX(100%); } }
   @media (prefers-reduced-motion: reduce) { .read.thinking::after { animation: none; } }
 
-  /* ---- full-page two-column desk (wide screens only) ---- */
+  /* ---- read/results: one centered single-column reading column ----
+     Replaces the old wide two-column desk, which left a large empty gap on the
+     left whenever the read column ran taller than the quote+chart column.
+     Order via flex `order` (robust for the cards that are inserted over time). */
+  #out {
+    display: flex; flex-direction: column; gap: 16px;
+    max-width: 800px; margin: 28px auto 0;
+  }
+  #out > * { margin-top: 0; }               /* spacing comes from the flex gap */
+  #out > .card       { order: 1; }          /* quote / hero */
+  #out > .read       { order: 2; }          /* the read: lean + confidence + bull/bear (+ stress, before-you-act) */
+  #out > .chart-card { order: 3; }          /* price chart */
+  #out > .evidence   { order: 4; }          /* "what it read" data panel */
+  #out > .move       { order: 5; }          /* "your move" / journal */
+
+  /* wider page chrome on big screens; the read column above stays centered at <=800 */
   @media (min-width: 980px) {
     .wrap { max-width: 1180px; }
     .wrap > .eyebrow, .wrap > h1, .wrap > .sub, .wrap > .row, .wrap > .foot {
@@ -366,19 +381,6 @@
     }
     .wrap > .eyebrow, .wrap > h1, .wrap > .sub { text-align: center; }
     .wrap > .row { justify-content: center; }
-    #out {
-      display: grid; grid-template-columns: 1.32fr 1fr; gap: 16px; align-items: start;
-      grid-template-areas:
-        "price    read"
-        "chart    read"
-        "evidence move";
-    }
-    #out > * { margin-top: 0; }
-    #out > .card       { grid-area: price; }
-    #out > .chart-card { grid-area: chart; }
-    #out > .read       { grid-area: read; }
-    #out > .evidence   { grid-area: evidence; }
-    #out > .move       { grid-area: move; }
   }
 
 </style>

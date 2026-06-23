@@ -1204,7 +1204,11 @@
   const acdd = document.getElementById("acdd");
   let acItems = [], acIndex = -1, acTimer = null, acSeq = 0;
 
-  function hideAC() { acdd.classList.remove("show"); acdd.innerHTML = ""; acItems = []; acIndex = -1; }
+  function hideAC() {
+    clearTimeout(acTimer);   // cancel a queued (debounced) search so it never fires
+    acSeq++;                 // invalidate any in-flight searchAC: its response fails the seq staleness check
+    acdd.classList.remove("show"); acdd.innerHTML = ""; acItems = []; acIndex = -1;
+  }
 
   function renderAC() {
     if (!acItems.length) { hideAC(); return; }

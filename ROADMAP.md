@@ -2,6 +2,8 @@
 
 > A living plan. Update it at milestones, not after every commit. Order matters more than dates — but the near-term target is **weeks, moving fast.**
 
+> See PRELAUNCH.md for the live pre-launch ledger (what's left, when, how).
+
 ## The near-term goal
 
 **Get Li-Da "live and legit" — anyone can find it — then validate it with real strangers BEFORE the big public push.**

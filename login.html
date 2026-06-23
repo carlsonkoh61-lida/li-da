@@ -15,9 +15,9 @@
     background: var(--bg);
     color: var(--ink);
     font-family: var(--font-body);
-    display: flex; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
     min-height: 100vh; padding: 24px;
-    position: relative; overflow: hidden;
+    position: relative; overflow-x: hidden; overflow-y: auto;
   }
   /* terminal ambience: faint teal wash + fine engineering grid */
   body::before {
@@ -292,5 +292,6 @@
       }
     });
   </script>
+  <script src="/footer.js" defer></script>
 </body>
 </html>

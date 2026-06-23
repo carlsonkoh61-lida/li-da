@@ -19,6 +19,9 @@
 2. **Pre-launch security/readiness review** — RLS on every Supabase table (locked to `auth.uid()`?), keys server-side, caching, per-user rate limiting, free/paid tier wiring. *When:* before live.
 3. **Name clearance** on "Li-Da" — free via MyIPO / ASEAN TMview / WIPO. *When:* before building brand further.
 
+## 🛡️ Guardrail — decided (don't relitigate)
+Li-Da informs, it does **not** advise. No predictions, no "BUY/SELL signals," no ML return-forecasting. Two reasons: (1) it destroys the anti-hype differentiation — "reasoning, never a verdict" IS the product; (2) giving "advice" likely triggers CMSA-regulated activity, so "data + reasoning, you decide" is the lightest legal path. Deepen *reasoning* (better stress-tests, sharper bull/bear, chart-as-translation), never add *verdicts*. Enhancement ideas welcome — they get stress-tested against this guardrail.
+
 ## 🚀 Go live (M2)
 Deploy free / US-stocks / MY audience · sanity-check whole flow as a brand-new user.
 
@@ -29,3 +32,4 @@ Deploy free / US-stocks / MY audience · sanity-check whole flow as a brand-new 
 - Free vs paid tier + pricing (RM19.90/mo experiment) — gated on legal answer
 - Chart-as-translation-of-the-read (a Claude Design session)
 - Login methods to watch (phone/OTP if friction shows) — measure, don't pre-build
+- Age acknowledgment / 18+ — needed? As a gate or just a Terms clause? *Ask the legal consult.* (NOT a Reddit-style mature-content gate — wrong tool.)

@@ -19,13 +19,15 @@ The front door has to not confuse or scare a newcomer. This is the UI/UX phase.
 - [x] **A real home / first screen** — the C+D merge, LIVE: manifesto hook → sample read (EXAMPLE-tagged) → search. Replaced the orb at index.html (PR #10)
 - [x] **Anonymous taste-then-gate** — LIVE: one free inline read on home, then sign-up wall; per-browser cookie + per-IP abuse cap (5/24h), fails closed (PR #11)
 - [ ] Parked polish, now with a target: tooltip styling · cached-read label placement · data-panel explanations · read structure/order
-- [ ] **Mobile/desktop pass** on the Desk (phone-first done; Desk looks sparse on wide desktop — needs a centered max-width pass)
+- [x] **Mobile/desktop pass** on the Desk — DONE: single centered column (≤800px) on wide desktop fixes the sparse/empty-gap layout; phone-first preserved (PR #21)
 - [x] **Light compliance** — DONE: Disclaimer / Terms / Privacy pages live & footer-linked (PR #13). NOTE: covers data + reduces risk but does NOT resolve the licensing question — that's the legal consult (a disclaimer ≠ a licence; SC says so directly)
 - [x] **Custom domain** — DONE: `li-da.app` live & secure (Cloudflare registrar, auto-configured DNS). "Dangerous" warning gone. (`www` redirect → apex; confirm www row goes green in Vercel)
-- [ ] **Confirm auth/login is solid** — sign-in works, per-user features hold, secure
-- [ ] **Read loading experience** — show the work while a read generates (step labels / skeleton card / calm on-brand copy). Felt-speed fix; no engine change. (Later, optional: stream the read as it generates — real build.)
-- [ ] **One-tap / Google (OAuth) login** — late-M1 conversion finish, before the stranger push. Supabase supports it; needs OAuth provider setup (Google Cloud creds + redirect URLs) + the button. Lowers sign-up friction at the wall (big for mobile SEA). Real work, not a toggle; not a launch blocker, but a leaky sign-up wastes earned traffic.
+- [x] **Confirm auth/login is solid** — sign-in works, per-user features hold. The reload-kick bug (signed-in users bounced to login on reload) is fixed & tested live (PR #20). NOTE: the deeper RLS / security review still remains pending for pre-launch.
+- [x] **Read loading experience** — DONE: calm on-brand loading overlay — the LI◆DA mark with a gentle diamond pulse, a random anti-hype "fact," and an honest status line; full-screen "wall" so there's no mobile reflow (PRs #16/#17/#18). (Later, optional: stream the read as it generates — real build.)
+- [x] **One-tap / Google (OAuth) login** — DONE: "Continue with Google" on the login page, wired to Supabase OAuth, lands on the Desk like email sign-in (PR #19). Lowers sign-up friction at the wall (big for mobile SEA). (OAuth app still in Testing mode — publish/verify before scaling past ~100 users; see Polish section.)
 - [x] **Nav cleanup** — DONE: removed Home + Tasks from signed-in nav; signed-in users land on Desk (Tasks page kept in repo, unlinked)
+
+> **Recently shipped (this session):** Desk single-column centered desktop layout (PR #21) · gold top-level disclaimers on the Desk (PR #22) · shared footer component `footer.js` — one injected legal/disclaimer footer that replaced four hand-forked footers across the active pages (PR #23) · autocomplete dropdown fixes — no longer reopens after picking a suggestion, and now closes the moment any read starts (PRs #24/#25).
 
 ### M2 — Go quietly live
 - [ ] Deploy on the custom domain — **free, US stocks, to the Malaysian audience** (US-stocks-first defers the Bursa data cost)

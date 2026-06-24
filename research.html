@@ -253,6 +253,10 @@
   .lvl.entry { stroke: var(--violet-soft); } .lvl.stop { stroke: var(--down); } .lvl.target { stroke: var(--up); }
   .lvllbl { font-family: "IBM Plex Mono", monospace; font-size: 9px; }
   .lvllbl.entry { fill: var(--violet-soft); } .lvllbl.stop { fill: var(--down); } .lvllbl.target { fill: var(--up); }
+  .band.risk { fill: var(--down); opacity: 0.09; }
+  .band.reward { fill: var(--up); opacity: 0.09; }
+  .bandlbl { font-family: "IBM Plex Mono", monospace; font-size: 9px; opacity: 0.6; letter-spacing: 0.04em; }
+  .bandlbl.risk { fill: var(--down); } .bandlbl.reward { fill: var(--up); }
   .chart-loading { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 14px; padding: 40px 0; text-align: center; }
   .chart-empty { color: var(--muted); font-size: 14px; padding: 30px 0; text-align: center; }
 
@@ -1126,11 +1130,35 @@
       });
     }
 
+    // --- risk / reward bands: shade the user's OWN logged zones (factual, not a forecast) ---
+    // Drawn BEHIND candles + level lines (inserted early in the SVG below). Each band needs
+    // BOTH its bounds; if a logged call has only some levels, only its complete band(s) draw.
+    let bands = "";
+    if (chartLogs && chartLogs.length) {
+      const rc = chartLogs[0];
+      const band = (a, b, cls, label) => {
+        if (a == null || b == null) return "";
+        const v1 = Number(a), v2 = Number(b);
+        if (isNaN(v1) || isNaN(v2)) return "";
+        let yTop = pY(Math.max(v1, v2)), yBot = pY(Math.min(v1, v2));
+        yTop = Math.max(priceTop, Math.min(priceBot, yTop));
+        yBot = Math.max(priceTop, Math.min(priceBot, yBot));
+        const h = yBot - yTop;
+        if (h <= 0.5) return "";
+        const lblY = Math.min(yBot - 3, yTop + 11);
+        return `<rect class="band ${cls}" x="${padL}" y="${yTop.toFixed(1)}" width="${(W - padR - padL).toFixed(1)}" height="${h.toFixed(1)}"/>` +
+          `<text class="bandlbl ${cls}" x="${(W - padR - 4).toFixed(1)}" y="${lblY.toFixed(1)}" text-anchor="end">${label}</text>`;
+      };
+      bands += band(rc.entry, rc.stop_loss, "risk", "what you’d lose");
+      bands += band(rc.entry, rc.take_profit, "reward", "your goal");
+    }
+
     chartGeo = { vis, N, start, padL, slot, W };
 
     const svg = `
       <svg viewBox="0 0 ${W} ${H}" class="chart-svg">
         ${grid}${sep}
+        ${bands}
         ${vols}
         ${candles}
         <path d="${ma20}" fill="none" stroke="var(--violet-soft)" stroke-width="1.2" vector-effect="non-scaling-stroke"/>

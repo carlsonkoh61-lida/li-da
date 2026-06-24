@@ -1066,9 +1066,12 @@
 
     // price gridlines + labels
     let grid = "";
+    const curY = current != null ? pY(current) : null;
     for (let i = 0; i <= 3; i++) {
       const val = pMin + (i / 3) * (pMax - pMin), y = pY(val);
       grid += `<line class="gridline" x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}"/>`;
+      // drop the axis NUMBER that collides with the live-price label (the line itself stays)
+      if (curY != null && Math.abs(y - curY) < 11) continue;
       grid += `<text class="axlbl" x="${W - padR + 4}" y="${(y + 3).toFixed(1)}">${val.toFixed(2)}</text>`;
     }
     // current price line + label
@@ -1095,17 +1098,43 @@
     // --- your logged calls overlaid on the candles ---
     let overlay = "";
     if (chartLogs && chartLogs.length) {
-      const lvl = (val, cls, label) => {
+      const rc = chartLogs[0];
+      // entry sitting on the live-price line is redundant — suppress its line AND label.
+      // "near" = within ~$0.01 or ~0.15% of the live price.
+      const near = (a, b) => Math.abs(a - b) <= Math.max(0.01, Math.abs(b) * 0.0015);
+      const entryNearLive = rc.entry != null && current != null && near(Number(rc.entry), Number(current));
+
+      // Lines stay at their TRUE price-y (no change). Labels are words-only (the exact
+      // number is already on the right axis) and get a vertical-nudge pass so a tight
+      // entry/stop/target cluster stacks legibly instead of overlapping.
+      const lvlLine = (val, cls) => {
         if (val == null) return "";
         const v = Number(val);
         if (v < pMin || v > pMax) return "";
-        const y = pY(v);
-        return `<line class="lvl ${cls}" x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}"/><text class="lvllbl ${cls}" x="${(padL + 2)}" y="${(y - 3).toFixed(1)}">${label} ${v.toFixed(2)}</text>`;
+        return `<line class="lvl ${cls}" x1="${padL}" y1="${pY(v).toFixed(1)}" x2="${W - padR}" y2="${pY(v).toFixed(1)}"/>`;
       };
-      const rc = chartLogs[0];
-      overlay += lvl(rc.entry, "entry", "entry");
-      overlay += lvl(rc.stop_loss, "stop", "stop");
-      overlay += lvl(rc.take_profit, "target", "target");
+      if (!entryNearLive) overlay += lvlLine(rc.entry, "entry");
+      overlay += lvlLine(rc.stop_loss, "stop");
+      overlay += lvlLine(rc.take_profit, "target");
+
+      const lblItems = [];
+      const addLbl = (val, cls, text) => {
+        if (val == null) return;
+        const v = Number(val);
+        if (v < pMin || v > pMax) return;
+        lblItems.push({ y: pY(v) - 3, cls, text });
+      };
+      if (!entryNearLive) addLbl(rc.entry, "entry", "entry");
+      addLbl(rc.stop_loss, "stop", "stop");
+      addLbl(rc.take_profit, "target", "target");
+      // stack: sort top→bottom, push any label within ~11px of the previous one down
+      lblItems.sort((a, b) => a.y - b.y);
+      for (let i = 1; i < lblItems.length; i++) {
+        if (lblItems[i].y - lblItems[i - 1].y < 11) lblItems[i].y = lblItems[i - 1].y + 11;
+      }
+      lblItems.forEach((it) => {
+        overlay += `<text class="lvllbl ${it.cls}" x="${(padL + 2)}" y="${it.y.toFixed(1)}">${it.text}</text>`;
+      });
 
       const idxByDate = (d) => {
         const ld = String(d).slice(0, 10);
@@ -1145,9 +1174,11 @@
         yBot = Math.max(priceTop, Math.min(priceBot, yBot));
         const h = yBot - yTop;
         if (h <= 0.5) return "";
+        const rect = `<rect class="band ${cls}" x="${padL}" y="${yTop.toFixed(1)}" width="${(W - padR - padL).toFixed(1)}" height="${h.toFixed(1)}"/>`;
+        // only label a band tall enough to hold the text legibly; thinner → fill only
+        if (h < 14) return rect;
         const lblY = Math.min(yBot - 3, yTop + 11);
-        return `<rect class="band ${cls}" x="${padL}" y="${yTop.toFixed(1)}" width="${(W - padR - padL).toFixed(1)}" height="${h.toFixed(1)}"/>` +
-          `<text class="bandlbl ${cls}" x="${(W - padR - 4).toFixed(1)}" y="${lblY.toFixed(1)}" text-anchor="end">${label}</text>`;
+        return rect + `<text class="bandlbl ${cls}" x="${(W - padR - 4).toFixed(1)}" y="${lblY.toFixed(1)}" text-anchor="end">${label}</text>`;
       };
       bands += band(rc.entry, rc.stop_loss, "risk", "what you’d lose");
       bands += band(rc.entry, rc.take_profit, "reward", "your goal");

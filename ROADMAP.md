@@ -6,6 +6,8 @@
 
 > See LOOP.md for how the four rooms connect (the product loop).
 
+> See CHART.md for how the Desk chart translates The Read.
+
 ## The near-term goal
 
 **Get Li-Da "live and legit" — anyone can find it — then validate it with real strangers BEFORE the big public push.**

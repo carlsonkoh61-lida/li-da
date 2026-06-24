@@ -14,14 +14,14 @@ A user's week, one stock:
 ## Build status (verified 24 Jun)
 - ✅ **Log → Alert prompt** — live
 - ✅ **Notifier** (alert fires → email in Li-Da's voice → deep link to fresh read) — live, confirmed
-- ❌ **Watch ↔ Log auto-add** — not built (next brick)
+- ✅ **Watch ↔ Log auto-add** — live (logging a call adds the ticker to the Watchlist; duplicate-safe). Verified live 24 Jun.
 - ⚠️ **Watchlist tap → Desk** — works, but always fires a fresh AI read; the cached/two-tap freshness rule is not yet built (defer to pre-stranger cost pass)
 - ❓ **Journal-talks-back** — not built (its own design chapter; the moat layer)
 
-**Next brick:** Watch ↔ Log auto-add.
+**Next brick:** the two remaining loop items are ⚠️ **Watchlist two-tap freshness** (deferred to the pre-stranger cost pass) and ❓ **Journal-talks-back** (its own design chapter, the moat layer).
 
 ## The five connections (mostly wiring up what already exists)
-- **❌ NOT BUILT — Watch ↔ Log:** logging a call auto-adds the ticker to Watchlist (logging = caring = tracking). *Verified 24 Jun: logging a call does not yet add the ticker to the Watchlist.*
+- **✅ BUILT & LIVE — Watch ↔ Log:** logging a call auto-adds the ticker to Watchlist (logging = caring = tracking). *Verified live 24 Jun: logging a call adds the ticker to the Watchlist, duplicate-safe (already-watched stocks don't error or duplicate).*
 - **⚠️ PARTIAL — Watchlist tap → Desk:** lands on the *cached* read + live price + chart, with a "pull fresh read" button. Cheap + instant; fresh read is the user's *choice*. (Routine browse — don't burn an API call.) *Verified 24 Jun: tapping a watchlist row deep-links to the Desk (`?symbol=`) and loads the read, which works — BUT it currently fires a full fresh AI read every time, not the intended cached-read-on-browse. The two-tap freshness rule (browse = cached, react = fresh) is NOT yet implemented.*
 - **✅ BUILT & LIVE — Log → Alert (KEYSTONE):** at the moment of logging, prompt to set alerts *prefilled with the entry/stop/target just entered* (reuse Alert UI). Maximum intent, zero re-entry. Turns a static journal entry into a living one. *Verified live 24 Jun: the post-log "watch your exits?" prompt creates alerts at stop/target.*
 - **✅ effectively covered — Alert tap → Desk:** lands on a *fresh* read — because something genuinely changed (price move / news / earnings). Spending an API call is justified here. *The notifier email deep-links back to `research.html?symbol=` for a fresh read (the same fresh-read-on-arrival behaviour). Notifier confirmed live (real alert emails received).*
@@ -37,7 +37,7 @@ Behaviour depends on *why* the user is there: **browsing (Watchlist tap) → cac
 
 ## Build order (progress as of 24 Jun)
 1. ✅ **Log → Alert prompt** (keystone, smallest, highest "feels alive" payoff, reuses existing UI). — **DONE & live.** *(Plus the notifier: alert fires → email in Li-Da's voice → deep link to a fresh read — confirmed live.)*
-2. ⬜ **Watch ↔ Log auto-add.** — **next brick.**
+2. ✅ **Watch ↔ Log auto-add.** — **DONE & live.**
 3. ⬜ **Two-tap freshness rule** (browse = cached, react = fresh). — not built; defer to the pre-stranger cost pass (today the Watchlist tap always fires a fresh read).
 4. ⬜ **Journal-talks-back** (outcomes + check-ins) — the moat layer. Its own design chapter, not a quick edit.
 

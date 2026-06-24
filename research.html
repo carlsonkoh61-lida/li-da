@@ -325,6 +325,26 @@
   .logmsg.ok { color: var(--up); }
   .logmsg.err { color: var(--down); }
 
+  /* ---- log → alert offer (the loop's first connection) ---- */
+  .alert-offer { margin-top: 16px; }
+  .alert-offer:empty { display: none; }
+  .ao-card { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .ao-head { font-size: 14px; color: var(--paper); line-height: 1.5; margin-bottom: 4px; }
+  .ao-sub { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin-bottom: 14px; }
+  .ao-row { display: flex; align-items: center; gap: 11px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 9px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.15s; }
+  .ao-row:hover { border-color: rgba(143,176,214,0.4); }
+  .ao-row input { width: 16px; height: 16px; accent-color: var(--violet); cursor: pointer; flex-shrink: 0; }
+  .ao-row .lbl { flex: 1; font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .ao-row .val { font-family: "IBM Plex Mono", monospace; font-size: 14px; color: var(--paper); }
+  .ao-row.stop .val { color: var(--down); } .ao-row.target .val { color: var(--up); } .ao-row.entry .val { color: var(--violet-soft); }
+  .ao-actions { display: flex; gap: 12px; align-items: center; margin-top: 12px; }
+  .ao-set { background: linear-gradient(135deg, var(--violet), var(--violet-2)); color: #0B0D14; border: none; border-radius: 9px; padding: 10px 18px; font-size: 13.5px; font-weight: 600; font-family: "Inter", sans-serif; cursor: pointer; transition: filter 0.15s; }
+  .ao-set:hover { filter: brightness(1.06); } .ao-set:disabled { opacity: 0.5; cursor: default; filter: none; }
+  .ao-dismiss { background: transparent; border: none; color: var(--muted); font-size: 13px; cursor: pointer; font-family: "Inter", sans-serif; }
+  .ao-dismiss:hover { color: var(--paper); }
+  .ao-msg { font-size: 13px; margin-top: 10px; line-height: 1.5; }
+  .ao-msg.ok { color: var(--up); } .ao-msg.err { color: var(--down); }
+
   .error { margin-top: 16px; color: var(--down); font-size: 15px; }
   .foot { margin-top: 44px; font-size: 13px; color: var(--gold); border-top: 1px solid var(--line); padding-top: 20px; line-height: 1.5; }
 
@@ -808,6 +828,7 @@
         </label>
         <button id="logbtn" class="logbtn">Log to journal</button>
         <div id="logmsg" class="logmsg"></div>
+        <div id="alertOffer" class="alert-offer"></div>
       </div>`;
   }
 
@@ -855,10 +876,74 @@
       msg.className = "logmsg ok";
       msg.textContent = "Saved to your journal ✓  " + bits.join(" · ");
       b.textContent = "Logged ✓";
+      offerAlerts(row.symbol, row.entry, row.stop_loss, row.take_profit, row.price_at_log);
       setTimeout(() => { b.disabled = false; b.textContent = "Log again"; }, 1800);
     } catch (e) {
       msg.className = "logmsg err"; msg.textContent = "Couldn't reach the journal. Try again.";
       b.disabled = false; b.textContent = "Log to journal";
+    }
+  }
+
+  // The loop's first connection: after a logged call, offer to watch the exits.
+  // Reuses the alerts-table insert shape exactly (see setAlert in alerts.html),
+  // so cron check-alerts.js picks these up identically to manually-set alerts.
+  function offerAlerts(sym, entry, stop, target, price) {
+    const box = document.getElementById("alertOffer");
+    if (!box) return;
+    const fmt = (v) => "$" + Number(v).toFixed(2);
+    const rows = [];
+    if (stop != null) rows.push('<label class="ao-row stop"><input type="checkbox" data-kind="stop" checked /><span class="lbl">Stop-loss</span><span class="val">' + fmt(stop) + '</span></label>');
+    if (target != null) rows.push('<label class="ao-row target"><input type="checkbox" data-kind="target" checked /><span class="lbl">Take-profit</span><span class="val">' + fmt(target) + '</span></label>');
+    if (entry != null) rows.push('<label class="ao-row entry"><input type="checkbox" data-kind="entry" /><span class="lbl">Entry</span><span class="val">' + fmt(entry) + '</span></label>');
+    if (!rows.length) { box.innerHTML = ""; return; }
+    box.dataset.sym = sym;
+    box.dataset.entry = entry == null ? "" : entry;
+    box.dataset.stop = stop == null ? "" : stop;
+    box.dataset.target = target == null ? "" : target;
+    box.dataset.price = price == null ? "" : price;
+    box.innerHTML =
+      '<div class="ao-card">' +
+        '<div class="ao-head">Want Li-Da to watch your exits?</div>' +
+        '<div class="ao-sub">Set alerts at the levels you just logged — no need to re-enter them. Li-Da keeps watch and tells you the moment one’s reached.</div>' +
+        rows.join("") +
+        '<div class="ao-actions"><button type="button" class="ao-set" id="aoSet">Set alerts</button><button type="button" class="ao-dismiss" id="aoDismiss">Not now</button></div>' +
+        '<div class="ao-msg" id="aoMsg"></div>' +
+      '</div>';
+    document.getElementById("aoSet").addEventListener("click", confirmAlertOffer);
+    document.getElementById("aoDismiss").addEventListener("click", () => { box.innerHTML = ""; });
+  }
+
+  async function confirmAlertOffer() {
+    const box = document.getElementById("alertOffer");
+    const msg = document.getElementById("aoMsg");
+    const setBtn = document.getElementById("aoSet");
+    const sym = box.dataset.sym;
+    const price = box.dataset.price === "" ? null : Number(box.dataset.price);
+    const picks = [];
+    box.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+      if (!cb.checked) return;
+      const kind = cb.dataset.kind;
+      if (kind === "stop") picks.push({ threshold: Number(box.dataset.stop), direction: "below", note: "stop — " + sym });
+      else if (kind === "target") picks.push({ threshold: Number(box.dataset.target), direction: "above", note: "target — " + sym });
+      else if (kind === "entry") {
+        const entry = Number(box.dataset.entry);
+        picks.push({ threshold: entry, direction: (price != null && price < entry) ? "above" : "below", note: "entry — " + sym });
+      }
+    });
+    msg.className = "ao-msg";
+    if (!picks.length) { msg.className = "ao-msg err"; msg.textContent = "Pick at least one level, or tap Not now."; return; }
+    setBtn.disabled = true; setBtn.textContent = "Setting…";
+    try {
+      if (!window.lidaAuth) throw new Error("not signed in");
+      const sess = await window.lidaAuth.getSession();
+      const email = sess && sess.user ? sess.user.email : null;
+      const rows = picks.map((p) => ({ symbol: sym, direction: p.direction, threshold: p.threshold, note: p.note, email: email }));
+      const { error } = await window.lidaAuth.client.from("alerts").insert(rows);
+      if (error) { msg.className = "ao-msg err"; msg.textContent = error.message || "Couldn’t set the alerts. Try again."; setBtn.disabled = false; setBtn.textContent = "Set alerts"; return; }
+      box.innerHTML = '<div class="ao-card"><div class="ao-msg ok">Alerts set — Li-Da’s watching your exits ✓</div></div>';
+    } catch (e) {
+      msg.className = "ao-msg err"; msg.textContent = "Couldn’t reach alerts. Try again.";
+      setBtn.disabled = false; setBtn.textContent = "Set alerts";
     }
   }
 

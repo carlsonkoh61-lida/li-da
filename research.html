@@ -870,9 +870,21 @@
       const { data, error } = await window.lidaAuth.client.from("research_log").insert(row).select();
       if (error) { msg.className = "logmsg err"; msg.textContent = error.message || "Couldn't save."; b.disabled = false; b.textContent = "Log to journal"; return; }
       const s = (Array.isArray(data) && data[0]) || {};
+
+      // Bonus, never blocking: logging = caring, so watch it too. Reuses the
+      // Watchlist insert shape (see watchlist.html) so RLS binds the row to this
+      // user identically. A duplicate (already watching) counts as success.
+      let watched = false;
+      try {
+        const w = await window.lidaAuth.client.from("watchlist").insert({ symbol: row.symbol });
+        if (!w.error || w.error.code === "23505" || /duplicate|unique/i.test(w.error.message || "")) watched = true;
+        else console.warn("Watchlist auto-add skipped:", w.error.message || w.error);
+      } catch (e) { console.warn("Watchlist auto-add error:", e); }
+
       const bits = [];
       if (s.stop_loss != null) bits.push("stop " + money(s.stop_loss));
       if (s.take_profit != null) bits.push("target " + money(s.take_profit));
+      if (watched) bits.push("added to your watchlist");
       msg.className = "logmsg ok";
       msg.textContent = "Saved to your journal ✓  " + bits.join(" · ");
       b.textContent = "Logged ✓";

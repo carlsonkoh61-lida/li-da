@@ -17,6 +17,7 @@
 ## 🧱 The real walls (ordered by fuse length)
 1. **Legal consult — LONGEST FUSE, book first.** Does Li-Da fall under the CMSA? If so, what's the lightest compliant path? *How:* one consult with a Malaysian capital-markets lawyer (NOT a self-serve CMSL application). Draft the message, ask initial-consult fee. *When:* do-now — gates charging, you don't control their calendar.
 2. **Pre-launch security/readiness review** — RLS on every Supabase table (locked to `auth.uid()`?), keys server-side, caching, per-user rate limiting, free/paid tier wiring. *When:* before live.
+   - ✅ **RLS review done (verified live 25 Jun 2026).** All core user-data tables (`research_log`, `watchlist`, `alerts`) have RLS on and every policy scoped to `auth.uid() = user_id`; service key is server-side only (never shipped to the browser). Canonical schema + policies now committed at `supabase/schema.sql` (version-controlled, diffable, restorable). *Open (minor):* consider `research_log.user_id SET NOT NULL` to match the other tables — the policy already enforces ownership, so this is belt-and-suspenders.
 3. **Name clearance** on "Li-Da" — free via MyIPO / ASEAN TMview / WIPO. *When:* before building brand further.
 
 ## 🛡️ Guardrail — decided (don't relitigate)

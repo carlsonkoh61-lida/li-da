@@ -6,11 +6,12 @@
 -- a user's own data: research_log (the journal), watchlist, and alerts.
 -- If you change a policy in the Supabase dashboard, UPDATE THIS FILE to match.
 --
--- This is a COMMITTED RECORD, not an auto-run migration. It is not executed by
--- any build step. It exists so the security posture is in version control —
--- reviewable, diffable, and restorable. To restore/reproduce in a fresh project,
--- paste it into Supabase → SQL Editor → Run (the drop-policy-if-exists guards
--- make the policy section safely re-runnable).
+-- This is a COMMITTED RECORD that exists so the security posture is in version
+-- control — reviewable, diffable, and restorable as a reference. It is not
+-- executed by any build step.
+--
+-- Recorded as verified live 25 Jun 2026. Not a migration — do not execute against
+-- production; Supabase migrations are the path for actual changes.
 --
 -- The other tables are documented in their own files:
 --   analyze_cache       → supabase/analyze-cache.sql      (service-key only, RLS on / no policies)
@@ -51,11 +52,6 @@ create table if not exists public.research_log (
 
 alter table public.research_log enable row level security;
 
-drop policy if exists own_select on public.research_log;
-drop policy if exists own_insert on public.research_log;
-drop policy if exists own_update on public.research_log;
-drop policy if exists own_delete on public.research_log;
-
 create policy own_select on public.research_log
   for select using (auth.uid() = user_id);
 create policy own_insert on public.research_log
@@ -73,23 +69,20 @@ create table if not exists public.watchlist (
   id         uuid        primary key default gen_random_uuid(),
   user_id    uuid        not null default auth.uid() references auth.users(id) on delete cascade,
   symbol     text        not null,
-  created_at timestamptz not null default now(),
-  -- VERIFY LIVE: the client treats a unique-violation (23505) on insert as
-  -- "already watching". This constraint MUST be composite (user_id, symbol) so
-  -- two different users can each watch the same ticker. If live inspection shows
-  -- it is on `symbol` ALONE, that is a bug (user B can't watch a ticker user A
-  -- already has, and leaks that someone watches it) — fix to composite.
-  unique (user_id, symbol)
+  created_at timestamptz not null default now()
 );
+
+-- Uniqueness is enforced by a unique INDEX, not a table constraint — which is
+-- why the earlier pg_constraint check returned nothing. Verified live 25 Jun
+-- 2026: composite (user_id, symbol), correctly per-user. Two different users can
+-- each watch the same ticker; the 23505 the client catches as "already watching"
+-- only fires when the SAME user re-adds their own duplicate.
+create unique index watchlist_user_symbol_unique on public.watchlist (user_id, symbol);
 
 alter table public.watchlist enable row level security;
 
 -- NOTE: no UPDATE policy by design — watchlist rows are never edited, only
 -- added or removed. Without an update policy, UPDATEs are denied (safe).
-drop policy if exists wl_select on public.watchlist;
-drop policy if exists wl_insert on public.watchlist;
-drop policy if exists wl_delete on public.watchlist;
-
 create policy wl_select on public.watchlist
   for select using (auth.uid() = user_id);
 create policy wl_insert on public.watchlist
@@ -116,11 +109,6 @@ create table if not exists public.alerts (
 );
 
 alter table public.alerts enable row level security;
-
-drop policy if exists al_select on public.alerts;
-drop policy if exists al_insert on public.alerts;
-drop policy if exists al_update on public.alerts;
-drop policy if exists al_delete on public.alerts;
 
 create policy al_select on public.alerts
   for select using (auth.uid() = user_id);

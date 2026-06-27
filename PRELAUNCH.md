@@ -29,6 +29,16 @@ Deploy free / US-stocks / MY audience · sanity-check whole flow as a brand-new 
 ## 👥 Validate (M3–M4)
 ~10 real strangers · watch where they get confused · start the trust loop (journal/track-record) · then first paying user (**GATED on legal consult**).
 
+## ✨ Final polish — pre-release pass (small, batch these together)
+*These are intentionally batched for one final pre-release pass — do not do piecemeal; they're low-priority until the launch-gating walls are cleared.*
+
+- **Landing lede length** — the hero lede is ~6 sentences; reads well but could tighten ("No tips. No predictions." could compress) if a punchier hero is wanted. *Optional.*
+- **Chart label backgrounds** — the entry/stop/target word-labels sit directly on the lines/candles; a faint background chip behind each word would make them read cleaner. (From the chart declutter session.)
+- **Chart words-vs-numbers** — currently words-only on level labels; consider the "smart" version (show the price number when there's room, word-only when crowded) for beginner clarity. *Design call, deferred.*
+- **`research_log.user_id` → SET NOT NULL** — make it match `watchlist`/`alerts` (policy already enforces ownership; this is belt-and-suspenders). Tiny DB hardening.
+- **Stale "notifier coming soon" copy** — the Alerts page may still say "once the notifier is live (next step)"; the notifier IS live — update the copy. (Verify and fix.)
+- **Verified Resend sending domain** — alerts still send from `onboarding@resend.dev` (sandbox); swap to `alerts@li-da.app` once the domain is verified in Resend. (Pre-stranger — sandbox looks untrustworthy + has limits.)
+
 ## 🤔 Open questions (let them ponder)
 - Free vs paid tier + pricing (RM19.90/mo experiment) — gated on legal answer
 - Chart-as-translation-of-the-read (a Claude Design session)

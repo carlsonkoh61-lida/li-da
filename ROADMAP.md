@@ -8,6 +8,8 @@
 
 > See CHART.md for how the Desk chart translates The Read.
 
+> See PITCH.md for the canonical problem-first spine — the wound the stranger test (M3) validates and the framing the legal consult (M4) leans on.
+
 ## The near-term goal
 
 **Get Li-Da "live and legit" — anyone can find it — then validate it with real strangers BEFORE the big public push.**

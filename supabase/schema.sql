@@ -123,3 +123,48 @@ create policy al_delete on public.alerts
 -- which bypasses RLS. That key is server-side only (Vercel env var); it never
 -- ships to the browser. The policies above govern the BROWSER (anon/authenticated)
 -- paths only.
+
+
+-- =============================================================================
+-- feedback — anonymous landing-page feedback captured at the sign-up wall
+-- =============================================================================
+-- DESIGN — this table is deliberately DIFFERENT from the user-scoped tables above:
+--
+--   * WRITE-ONLY from the browser. There is an INSERT policy and NOTHING else —
+--     no SELECT, UPDATE, or DELETE policy. With RLS enabled, the absence of a
+--     policy means the action is DENIED. So no client (anon OR authenticated) can
+--     ever read, edit, or delete a feedback row. Only server-side SERVICE_KEY
+--     access (the Supabase dashboard) can read it. This stops anyone from
+--     harvesting, altering, or wiping other visitors' feedback.
+--
+--   * ANONYMOUS by design — there is NO user_id column. The card is shown at the
+--     landing wall to signed-OUT visitors, so there is no auth.uid() to bind. The
+--     INSERT policy is intentionally `with check (true)` and granted to `anon`:
+--     anyone may SUBMIT feedback. That openness is acceptable ONLY because the
+--     table is write-only (above) — a malicious actor can add noise, never read
+--     or exfiltrate. (Contrast the user tables, where insert is locked to
+--     `auth.uid() = user_id`; here there is no owner to scope to.)
+--
+-- Columns are all low-sensitivity: a coarse clarity bucket, an optional free-text
+-- note, the symbol just read (context), and a context tag (e.g. 'wall').
+-- =============================================================================
+create table if not exists public.feedback (
+  id         uuid        primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  clarity    text        not null check (clarity in ('clearer', 'same', 'confused')),
+  note       text,                 -- optional open answer; nullable
+  symbol     text,                 -- the ticker they just read, for context; nullable
+  context    text                  -- where it was captured, e.g. 'wall'; nullable
+);
+
+alter table public.feedback enable row level security;
+
+-- The ONLY policy: anonymous visitors may INSERT. `with check (true)` is
+-- acceptable here ONLY because this is INSERT (anyone may submit feedback) and
+-- there is no read/update/delete policy to pair it with.
+create policy feedback_anon_insert on public.feedback
+  for insert to anon with check (true);
+
+-- DELIBERATELY NO select / update / delete policies. Do not add them. Reading
+-- feedback is a server-side / dashboard (service-key) operation only — the
+-- service key bypasses RLS and is never shipped to the browser.

@@ -120,6 +120,20 @@
   .btn-ghost { flex: 1; text-align: center; text-decoration: none; background: transparent; color: var(--ink); font-weight: 500; font-size: 13.5px; border: 1px solid var(--line-strong); border-radius: 11px; padding: 11px 0; font-family: var(--font-body); }
   .btn-ghost:hover { border-color: var(--accent); }
 
+  /* anonymous feedback card (shown once, at the wall) — calm, dismissible */
+  .fb-card { position: relative; margin-top: 12px; padding: 16px 18px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; }
+  .fb-x { position: absolute; top: 9px; right: 11px; background: none; border: none; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 5px; }
+  .fb-x:hover { color: var(--ink-dim); }
+  .fb-intro { font-size: 12px; color: var(--muted); line-height: 1.5; padding-right: 18px; }
+  .fb-q { font-size: 13px; color: var(--ink-dim); font-weight: 500; margin-top: 9px; }
+  .fb-opts { display: flex; gap: 8px; margin-top: 11px; flex-wrap: wrap; }
+  .fb-opt { flex: 1; min-width: 92px; text-align: center; background: transparent; color: var(--ink); font-family: var(--font-body); font-size: 12.5px; border: 1px solid var(--line-strong); border-radius: 10px; padding: 9px 6px; cursor: pointer; }
+  .fb-opt:hover { border-color: var(--accent); }
+  .fb-note-l { display: block; font-size: 11.5px; color: var(--muted); line-height: 1.45; margin-top: 13px; }
+  .fb-note { width: 100%; box-sizing: border-box; margin-top: 7px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; font-family: var(--font-body); font-size: 13px; }
+  .fb-note:focus { outline: none; border-color: var(--accent); }
+  .fb-thanks { font-size: 13px; color: var(--ink-dim); }
+
   /* trust + footer */
   .trust { margin: 26px 0 0; padding: 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; text-align: center; font-size: 13px; color: var(--gold); }
   .foot { text-align: center; font-size: 11px; color: var(--muted); padding: 18px 0 6px; }
@@ -209,6 +223,7 @@
       var dd = document.getElementById("dd");
       var out = document.getElementById("anonResult");
       var timer = null, seq = 0, items = [], idx = -1, busy = false;
+      var lastReadSymbol = null; // the ticker just read, passed to feedback for context
 
       function esc(s) {
         return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -284,6 +299,7 @@
       function cap1(s) { s = String(s || ""); return s.charAt(0).toUpperCase() + s.slice(1); }
 
       function renderRead(symbol, mkt, read) {
+        lastReadSymbol = symbol; // remember for the wall feedback card
         var name = (mkt && mkt.name) || symbol;
         var meta = (mkt && mkt.industry) ? (symbol + " · " + mkt.industry) : symbol;
         var init = String(symbol || "?").slice(0, 2).toUpperCase();
@@ -328,15 +344,80 @@
       }
 
       function showWall(message) {
-        out.innerHTML =
+        var wallHtml =
           '<div class="wall">' +
             "<h3>That's your free read.</h3>" +
             "<p>" + esc(message || "Create a free account to read any stock, save your reads, and track your decisions. Still free — no card needed.") + "</p>" +
             '<div class="row"><a class="btn-primary" href="/login.html">Sign up</a><a class="btn-ghost" href="/login.html">Sign in</a></div>' +
           "</div>";
+        // A calm, once-ever, dismissible feedback card BELOW the wall CTA. Never a
+        // modal, never blocking. Suppressed forever once tapped or dismissed.
+        var showFb = !feedbackSeen();
+        out.innerHTML = wallHtml + (showFb ? feedbackCardHtml() : "");
+        if (showFb) wireFeedback();
         out.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
       function showError(msg) { out.innerHTML = '<div class="anon-error">' + esc(msg) + "</div>"; }
+
+      // ---- anonymous feedback at the wall (ask once, ever; never blocking) ----
+      // Flag lives in localStorage with a cookie fallback (private mode). If set,
+      // the card NEVER shows again — not this session, not future visits.
+      function feedbackSeen() {
+        try { if (localStorage.getItem("lida_feedback_seen")) return true; } catch (e) {}
+        return /(?:^|;\s*)lida_feedback_seen=1/.test(document.cookie);
+      }
+      function markFeedbackSeen() {
+        try { localStorage.setItem("lida_feedback_seen", "1"); } catch (e) {}
+        try { document.cookie = "lida_feedback_seen=1; path=/; max-age=" + (365 * 24 * 3600) + "; SameSite=Lax"; } catch (e) {}
+      }
+      function feedbackCardHtml() {
+        return '' +
+          '<div class="fb-card" id="fbCard">' +
+            '<button class="fb-x" id="fbDismiss" type="button" aria-label="Skip">&times;</button>' +
+            '<p class="fb-intro">Li-Da’s still new — one honest tap helps us build it right.</p>' +
+            '<p class="fb-q">After that read — how do you feel about the stock?</p>' +
+            '<div class="fb-opts">' +
+              '<button class="fb-opt" type="button" data-c="clearer">Clearer</button>' +
+              '<button class="fb-opt" type="button" data-c="same">About the same</button>' +
+              '<button class="fb-opt" type="button" data-c="confused">More confused</button>' +
+            '</div>' +
+            '<label class="fb-note-l" for="fbNote">(optional) What did this give you that the noise online doesn’t? — leave blank if nothing.</label>' +
+            '<input class="fb-note" id="fbNote" type="text" autocomplete="off" maxlength="500" />' +
+          '</div>';
+      }
+      // Insert MUST fail silently — feedback never blocks or breaks the experience.
+      function submitFeedback(clarity, note) {
+        try {
+          var client = window.lidaAuth && window.lidaAuth.client;
+          if (!client) return;
+          client.from("feedback").insert({
+            clarity: clarity,
+            note: note ? note : null,
+            symbol: lastReadSymbol || null,
+            context: "wall",
+          }).then(function () {}, function () {}); // swallow any error
+        } catch (e) { /* never surface */ }
+      }
+      function wireFeedback() {
+        var card = document.getElementById("fbCard");
+        if (!card) return;
+        var noteEl = document.getElementById("fbNote");
+        // The one required action is a single clarity tap; the note is optional.
+        [].forEach.call(card.querySelectorAll(".fb-opt"), function (b) {
+          b.addEventListener("click", function () {
+            var note = noteEl ? noteEl.value.trim() : "";
+            submitFeedback(b.getAttribute("data-c"), note);
+            markFeedbackSeen();
+            card.innerHTML = '<p class="fb-thanks">Thanks — that helps.</p>';
+          });
+        });
+        // Dismiss (skip): same once-ever flag, removes the card, blocks nothing.
+        var x = document.getElementById("fbDismiss");
+        if (x) x.addEventListener("click", function () {
+          markFeedbackSeen();
+          if (card.parentNode) card.parentNode.removeChild(card);
+        });
+      }
 
       // ---- name->ticker autocomplete (reuses /api/search) ----
       function hide() { dd.classList.remove("show"); dd.innerHTML = ""; items = []; idx = -1; }
